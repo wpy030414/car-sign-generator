@@ -67,6 +67,12 @@ export interface CharClass {
   width: Mm;
   /** 字符水平步进（pitch，中心到中心 / 单元格宽）。缺省 = width */
   advance?: Mm;
+  /**
+   * 该字符之后的间距（mm），覆盖 run.gap。
+   * 中国 GA 36-2018 表3 规定汉字后间隔 15mm、数字/字母后间隔 9mm，
+   * 用此字段按字符类型区分间距。
+   */
+  gapAfter?: Mm;
   /** 拟合方式，缺省 'fill' */
   fit?: GlyphFit;
   /** 标准规定的笔画宽度（信息性；实际笔画由字体承载） */
@@ -91,6 +97,39 @@ export interface Slot {
   literal?: string;
 }
 
+/**
+ * 自由文本槽位的自动分类：按实际字符是数字/字母/其他，选用对应 charClass。
+ * 用于「通用/自由输入」类型，用户可任意键入字母数字混排。
+ */
+export interface AutoClass {
+  digit: string;
+  letter: string;
+  /** 空格或其他字符（如连字符） */
+  other: string;
+}
+
+/**
+ * 自由文本序列：把一个字段整体展开为字符序列，逐字符按 auto 分类选用 charClass。
+ * 用于「通用/自由输入」类型（字符数与字母数字构成均可变）。
+ */
+export interface FreeRun {
+  kind: 'free';
+  origin: { x: Mm; y: Mm };
+  gap: Mm;
+  field: string;
+  auto: AutoClass;
+  /**
+   * 对齐方式。对齐在「对齐框」内进行：
+   * 框左边缘 = origin.x，框宽 = width（缺省 = 号牌宽 - origin.x，即右对齐到牌右缘）。
+   * - left：贴框左缘
+   * - center：框内居中
+   * - right：贴框右缘
+   */
+  align?: 'left' | 'center' | 'right';
+  /** 对齐框宽度（mm）；缺省 = 号牌宽 - origin.x */
+  width?: Mm;
+}
+
 /** 线性字符序列（绝大多数号牌的布局形式）。 */
 export interface CharacterRun {
   kind: 'run';
@@ -106,6 +145,9 @@ export interface CharacterRun {
   /** center = 整个序列相对号牌中线居中（用于字符数可变的情况） */
   align?: 'left' | 'center';
 }
+
+/** 布局序列：静态槽位（run）或自由文本（free）。 */
+export type Run = CharacterRun | FreeRun;
 
 /** 分隔点「·」——矢量绘制，不用字体字形（Latin.ttf 无 U+00B7），也不用外链图片。 */
 export interface CircleDecoration {
@@ -175,7 +217,7 @@ export interface PlateType {
   /** 边框（内缩描边）；width=0 表示无边框 */
   border: { width: Mm; fill: Fill };
   charClasses: Record<string, CharClass>;
-  runs: CharacterRun[];
+  runs: Run[];
   decorations: Decoration[];
   fields: FieldSpec[];
   /** 各字段默认值 */

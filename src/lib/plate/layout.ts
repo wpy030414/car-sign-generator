@@ -24,9 +24,11 @@ import type {
   CharClass,
   CharacterRun,
   FontRef,
+  FreeRun,
   Mm,
   PlacedGlyph,
   PlateType,
+  Run,
   Slot,
 } from '@/types/standard';
 
@@ -90,16 +92,22 @@ export function layoutRun(
   values: Record<string, string>,
 ): (PlacedGlyph | null)[] {
   const xs: Mm[] = [];
+  const gaps: Mm[] = []; // 每个字符之后的间距
   let cursor = run.origin.x;
-  for (const slot of run.slots) {
+  for (let i = 0; i < run.slots.length; i++) {
+    const slot = run.slots[i];
     const cls = type.charClasses[slot.classId];
     if (!cls) throw new Error(`未知的 charClass: ${slot.classId}（号牌类型 ${type.id}）`);
     xs.push(cursor);
-    cursor += pitchOf(cls) + run.gap;
+    const gapAfter = cls.gapAfter ?? run.gap;
+    gaps.push(gapAfter);
+    cursor += pitchOf(cls) + gapAfter;
   }
+  // 最后一个字符之后不应有间距（用于精确居中）
+  const trailingGap = gaps.length ? gaps[gaps.length - 1] : 0;
   if (run.align === 'center') {
     // 整个序列宽度（去掉末尾多余 gap），相对号牌中线居中
-    const totalW = cursor - run.gap - run.origin.x;
+    const totalW = cursor - trailingGap - run.origin.x;
     const dx = (type.size.width - totalW) / 2 - run.origin.x;
     for (let i = 0; i < xs.length; i++) xs[i] += dx;
   }
@@ -115,6 +123,66 @@ export function layoutRun(
       cell: { x: xs[i], y: run.origin.y, w: pitch, h: cls.height },
     };
   });
+}
+
+/**
+ * 布局一个自由文本序列：把字段整体展开为字符，逐字符按 auto 分类选 charClass。
+ * 空格字符按 `auto.other` 类处理（其 advance 提供词间隔）。
+ *
+ * 对齐在「对齐框」内进行：框左缘 = origin.x，框宽 = width（缺省 = 号牌宽 - origin.x）。
+ */
+export function layoutFreeRun(
+  run: FreeRun,
+  type: PlateType,
+  values: Record<string, string>,
+): (PlacedGlyph | null)[] {
+  const text = values[run.field] ?? '';
+  const out: (PlacedGlyph | null)[] = [];
+  const placements: { char: string; cls: CharClass }[] = [];
+
+  for (const ch of text) {
+    const clsId = /[0-9]/.test(ch)
+      ? run.auto.digit
+      : /[A-Za-z]/.test(ch)
+        ? run.auto.letter
+        : run.auto.other;
+    const cls = type.charClasses[clsId];
+    if (!cls) throw new Error(`未知的 charClass: ${clsId}（号牌类型 ${type.id}）`);
+    placements.push({ char: ch, cls });
+  }
+
+  const pitches = placements.map((p) => pitchOf(p.cls));
+  const totalW =
+    pitches.reduce((a, b) => a + b, 0) + run.gap * Math.max(0, pitches.length - 1);
+
+  // 对齐框
+  const boxLeft = run.origin.x;
+  const boxW = run.width ?? type.size.width - boxLeft;
+  let cursor = boxLeft;
+  if (run.align === 'center') {
+    cursor = boxLeft + Math.max(0, (boxW - totalW) / 2);
+  } else if (run.align === 'right') {
+    cursor = boxLeft + Math.max(0, boxW - totalW);
+  }
+
+  for (let i = 0; i < placements.length; i++) {
+    const { char, cls } = placements[i];
+    const pitch = pitches[i];
+    out.push({ char, cls, cell: { x: cursor, y: run.origin.y, w: pitch, h: cls.height } });
+    cursor += pitch + run.gap;
+  }
+  return out;
+}
+
+/** 布局任意序列（run 或 free），供渲染组件统一调用。 */
+export function layoutAny(
+  run: Run,
+  type: PlateType,
+  values: Record<string, string>,
+): (PlacedGlyph | null)[] {
+  return run.kind === 'run'
+    ? layoutRun(run, type, values)
+    : layoutFreeRun(run, type, values);
 }
 
 /**

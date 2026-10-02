@@ -1,0 +1,20 @@
+import { chromium } from 'playwright';
+import { writeFileSync } from 'node:fs';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1200, height: 400 } });
+await p.goto('http://localhost:5177/?region=CN&type=cn-small-car', { waitUntil: 'networkidle' });
+await p.evaluate(() => document.fonts.ready);
+await p.waitForTimeout(500);
+const b64 = await p.evaluate(async () => {
+  const mod = await import('/src/lib/plate/export.ts');
+  const reg = await import('/src/lib/standards/index.ts');
+  const svg = document.querySelector('svg[data-plate-svg]');
+  const type = reg.getPlateType('cn-small-car');
+  const blob = await mod.exportPlatePng(svg, type, reg.fontsOfType(type), { longEdge: 1200 });
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  let bin=''; for(let i=0;i<buf.length;i++) bin+=String.fromCharCode(buf[i]);
+  return btoa(bin);
+});
+writeFileSync('/tmp/plate-export/real-cn.png', Buffer.from(b64,'base64'));
+console.log('saved /tmp/plate-export/real-cn.png', Buffer.from(b64,'base64').length, 'bytes');
+await b.close();

@@ -128,6 +128,12 @@ export interface FreeRun {
   align?: 'left' | 'center' | 'right';
   /** 对齐框宽度（mm）；缺省 = 号牌宽 - origin.x */
   width?: Mm;
+  /**
+   * 内容超出对齐框宽度时，按比例压缩所有字符步进（pitch 与 gap）使其恰好填满框宽。
+   * 用于字符数可变的号牌（美国 6–8 位、欧盟地区代码 1–3 位、日本一连番号），
+   * 模拟实际号牌软件的「自动压缩」行为。字高不变，仅横向压缩（fill 模式承接）。
+   */
+  shrinkToFit?: boolean;
 }
 
 /** 线性字符序列（绝大多数号牌的布局形式）。 */

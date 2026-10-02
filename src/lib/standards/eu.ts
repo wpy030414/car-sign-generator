@@ -124,6 +124,8 @@ function euType(opts: {
         field: 'code',
         auto: { digit: 'digit', letter: 'letter', other: 'other' },
         align: 'left',
+        width: PLATE.w - (BAND_W + MARGIN_LEFT) - 15, // 右缘留 15mm
+        shrinkToFit: true, // 地区代码 1–3 位 + 数字，长度可变
       },
     ],
     decorations: [
@@ -135,7 +137,7 @@ function euType(opts: {
     ],
     defaults: { code: opts.codeDefault, country: opts.country },
     sample: opts.sample,
-    pattern: /^[A-Z0-9][A-Z0-9 \-]{0,8}$/,
+    pattern: /^[A-Z0-9][A-Z0-9 -]{0,8}$/,
   };
 }
 

@@ -123,6 +123,7 @@ function jpType(opts: JpTypeOpts): PlateType {
       auto: { digit: 'serialDigit', letter: 'serialDigit', other: 'serialOther' },
       align: 'right',
       width: W - 5 * s, // 右缘留 5mm 边距
+      shrinkToFit: true,
     },
   ];
 

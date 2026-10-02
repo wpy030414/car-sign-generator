@@ -14,7 +14,7 @@
 
 import { useId, type ReactNode } from 'react';
 import { gradientVector, resolveFill } from '@/lib/plate/fill';
-import { glyphTransform, layoutAny, pitchOf } from '@/lib/plate/layout';
+import { glyphTransform, layoutAny } from '@/lib/plate/layout';
 import type {
   ComponentDecoration,
   Fill,
@@ -193,6 +193,3 @@ export function PlateSvg({
     </svg>
   );
 }
-
-/** 导出 pitchOf 以便装饰组件（如圆点定位）复用。 */
-export { pitchOf };

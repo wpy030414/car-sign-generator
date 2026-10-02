@@ -151,13 +151,23 @@ export function layoutFreeRun(
     placements.push({ char: ch, cls });
   }
 
-  const pitches = placements.map((p) => pitchOf(p.cls));
-  const totalW =
-    pitches.reduce((a, b) => a + b, 0) + run.gap * Math.max(0, pitches.length - 1);
+  let pitches = placements.map((p) => pitchOf(p.cls));
+  let gap = run.gap;
+  let totalW = pitches.reduce((a, b) => a + b, 0) + gap * Math.max(0, pitches.length - 1);
 
   // 对齐框
   const boxLeft = run.origin.x;
   const boxW = run.width ?? type.size.width - boxLeft;
+
+  // 收缩适配：内容超框时按比例压缩 pitch 与 gap，使总宽恰好 = boxW。
+  // 字高不变（纵向不压），仅横向压缩 —— 由 fill 模式承接字形横向缩放。
+  if (run.shrinkToFit && totalW > boxW && totalW > 0) {
+    const k = boxW / totalW;
+    pitches = pitches.map((p) => p * k);
+    gap = gap * k;
+    totalW = boxW;
+  }
+
   let cursor = boxLeft;
   if (run.align === 'center') {
     cursor = boxLeft + Math.max(0, (boxW - totalW) / 2);
@@ -169,7 +179,7 @@ export function layoutFreeRun(
     const { char, cls } = placements[i];
     const pitch = pitches[i];
     out.push({ char, cls, cell: { x: cursor, y: run.origin.y, w: pitch, h: cls.height } });
-    cursor += pitch + run.gap;
+    cursor += pitch + gap;
   }
   return out;
 }

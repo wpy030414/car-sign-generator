@@ -88,12 +88,14 @@ function usType(opts: {
     runs: [
       {
         kind: 'free',
-        // 序列整体居中（各州边距不一，居中更通用）
-        origin: { x: 0, y: (PLATE.h - CAP) / 2 },
+        // 序列整体居中（各州边距不一，居中更通用）；左右各留 12mm 边距
+        origin: { x: 12, y: (PLATE.h - CAP) / 2 },
         gap: GAP,
         field: 'code',
         auto: { digit: 'digit', letter: 'letter', other: 'other' },
         align: 'center',
+        width: PLATE.w - 2 * 12, // 对齐框宽 = 牌宽 - 左右边距
+        shrinkToFit: true, // 6–8 位字符自适应压缩
       },
     ],
     decorations: [

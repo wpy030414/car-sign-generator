@@ -7,12 +7,12 @@
  *   并在其 advance 单元格内水平居中。用于「本身即按标准设计」的字体
  *   （中国 ChePaiZiTi、欧盟 FE-Schrift 克隆）。实测证据：
  *   FE-Schrift 数字 ink 宽高比 356/600 = 0.593，与标准 44.5/75 = 0.593 **完全一致**；
- *   ChePaiZiTi 数字 ink 比例 0.565，与 GA 36-2018 表3 数字 30/70 = 0.429 不一致，
+ *   ChePaiZiTi 数字 ink 比例 0.565，与 GA 36-2018 图1 规定的 45/90 = 0.5 不一致，
  *   故中国改用 fill 模式（见下）。
  *
  * - **fill（各向异性）**：字形 ink 被拉伸到精确的 width × height。用于替代字体
- *   （美国 Overpass 替代 Highway Gothic、日本 Noto 替代 TRM gothic），
- *   以及中国号牌（标准规定的数字 30×70 比例 0.429 明显窄于字体自然比例，
+ *   （美国 Roadgeek E(M) 即 FHWA 字形数据、日本 Noto 替代 TRM gothic），
+ *   以及中国号牌（标准规定的字符 45×90 比例 0.5 窄于字体自然比例，
  *   说明标准给出的是「压缩后的 ink 尺寸」，需各向异性拟合）。
  *
  * 度量数据来自 `fontMetrics.ts`（构建期由 fontTools 从字体文件精确测量），
@@ -34,11 +34,12 @@ import type {
 
 /** FontRef.family → FONT_METRICS 键的映射。 */
 const METRICS_BY_FAMILY: Record<string, keyof typeof FONT_METRICS> = {
-  ChePaiZiTi: 'Latin',
-  'Source Han Sans CN VF': 'HanCN',
+  'ChinaVehicleLicensePlateFont': 'CNPlate',
+  'ChePaiZiTi-Punct': 'Latin',
   'GL-Nummernschild-Mtl': 'FE',
-  Overpass: 'Overpass',
+  'Roadgeek 2014 Series EM': 'Roadgeek',
   'Noto Sans JP': 'NotoJP',
+  'FZ-Carnumber': 'FZJP',
 };
 
 export interface FontMetricsEntry {
@@ -50,6 +51,23 @@ export function metricsFor(font: FontRef): FontMetricsEntry {
   const key = METRICS_BY_FAMILY[font.family];
   if (!key) throw new Error(`未知字体 family: ${font.family}（需在 METRICS_BY_FAMILY 注册）`);
   return FONT_METRICS[key];
+}
+
+/**
+ * 字体的 cap 参考（大写 H 的 ink 高度与上缘），单位 em。
+ *
+ * 用于把「标点等矮字形」按 cap 高而非自身 ink 高缩放 —— 否则连字符、中黒
+ * 这类字形在 `fill` 模式下会被纵向拉伸成一整块实心矩形（美国/日本号牌曾如此）。
+ */
+export function capOf(font: FontRef): { top: number; height: number } {
+  const m = metricsFor(font);
+  for (const ch of ['H', 'E', '0']) {
+    const g = m.glyphs[ch];
+    if (g?.y0 !== undefined && g?.y1 !== undefined) {
+      return { top: g.y1, height: g.y1 - g.y0 };
+    }
+  }
+  return { top: 0.72, height: 0.72 };
 }
 
 /** 取某字符的 ink 度量；缺字形时退化为 advance-only（无 ink）。 */
@@ -212,7 +230,7 @@ export function glyphTransform(
   char: string,
   cls: CharClass,
   cell: { x: Mm; y: Mm; w: Mm; h: Mm },
-): { transform: string; fontSize: Mm } {
+): { transform: string; fontSize: Mm; hBold: Mm } {
   const g = glyphOf(cls.font, char);
   const hasInk =
     g.x0 !== undefined && g.y0 !== undefined && g.x1 !== undefined && g.y1 !== undefined;
@@ -226,39 +244,43 @@ export function glyphTransform(
     return {
       transform: `translate(${r(cell.x)} ${r(cell.y + cell.h + off)})`,
       fontSize,
+      hBold: 0,
     };
   }
 
   const inkW = g.x1! - g.x0!; // em
   const inkH = g.y1! - g.y0!; // em
+  const cap = capOf(cls.font);
+  // 矮字形（连字符、中黒等）以 cap 高为纵向基准，避免被拉伸成实心块
+  const smallInk = inkH < cap.height * 0.55;
+  const refH = smallInk ? cap.height : inkH;
+  const refTop = smallInk ? cap.top : g.y1!;
 
+  const hBold = cls.hBold ?? 0;
   let targetW: number;
-  let targetH: number;
+  const targetH = cls.height;
   if ((cls.fit ?? 'fill') === 'uniform') {
-    targetH = cls.height;
-    targetW = inkW * (targetH / inkH); // 保持自然比例
+    targetW = inkW * (targetH / refH) * (cls.xScale ?? 1); // 自然比例 × 横向系数
   } else {
-    targetH = cls.height;
-    targetW = cls.width; // 标准规定的 ink 宽
+    // 最终 ink 宽 = 基础字形 + 横向加粗量
+    targetW = Math.max(0.1, cls.width - hBold);
   }
 
   const sx = targetW / inkW;
-  const sy = targetH / inkH;
+  const sy = targetH / refH;
 
-  // uniform 模式：在 pitch 单元格内水平居中
-  let left = cell.x;
-  if ((cls.fit ?? 'fill') === 'uniform') {
-    left = cell.x + (cell.w - targetW) / 2;
-  }
+  // 最终 ink（含横向加粗）在 pitch 单元格内水平居中
+  const left = cell.x + (cell.w - (targetW + hBold)) / 2;
 
   // ink 左边缘 x0（em）经 sx 缩放后应落到 left
   const tx = left - g.x0! * sx;
-  // ink 上边缘：字体中为 y1（向上为正），SVG 中为 -y1；经 sy 缩放后应落到 cell.y
-  const ty = cell.y + g.y1! * sy;
+  // cap 上缘（矮字形即用 cap 上缘）经 sy 缩放后落到 cell.y
+  const ty = cell.y + refTop * sy;
 
   return {
     transform: `translate(${r(tx)} ${r(ty + off)}) scale(${r(sx)} ${r(sy)})`,
     fontSize,
+    hBold,
   };
 }
 

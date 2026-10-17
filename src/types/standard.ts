@@ -48,7 +48,7 @@ export interface FontRef {
  *   ink 在 advance 单元格内水平居中。用于「本身就是按标准设计」的字体
  *   （如中国 ChePaiZiTi、欧盟 FE-Schrift 克隆 —— 实测字形比例与标准一致）。
  * - `fill`：**各向异性拉伸** ink 至精确的 width × height。用于替代字体
- *   （如美国 Overpass 替代 Highway Gothic、日本 Noto 替代 TRM gothic），
+ *   （如美国 Roadgeek 复刻 FHWA Series E、日本 Noto 替代 TRM gothic），
  *   其自然比例与标准不符，需压缩/拉伸到规定的 ink 尺寸。
  */
 export type GlyphFit = 'uniform' | 'fill';
@@ -75,8 +75,25 @@ export interface CharClass {
   gapAfter?: Mm;
   /** 拟合方式，缺省 'fill' */
   fit?: GlyphFit;
+  /**
+   * uniform 模式的横向附加倍数。用于「按单元格宽度撑满」的版式：
+   * 以参考字形（数字 0）撑满单元格宽，其余字形按同一比例缩放，
+   * 因此 `1` 等窄字仍保持窄，不会被拉伸成方块。
+   */
+  xScale?: number;
   /** 标准规定的笔画宽度（信息性；实际笔画由字体承载） */
   stroke?: Mm;
+  /**
+   * 额外描边厚度（mm）。用于在不改变字形结构的前提下把笔画补到标准粗细
+   * （社区复刻字库的笔画往往略细于官方模具）。以 `vector-effect="non-scaling-stroke"`
+   * 施加，故不受各向异性缩放影响。
+   */
+  outline?: Mm;
+  /**
+   * 横向补偿加粗（mm）。各向异性压缩会把竖画压细，此值让同一字形再绘制一份
+   * 水平偏移副本，只加粗竖画、保持横画不变，用以还原标准字形的笔画对比。
+   */
+  hBold?: Mm;
   fill: Fill;
   font: FontRef;
   /** 字形在单元格内的垂直微调（某些字体 ink box 偏移时需要） */

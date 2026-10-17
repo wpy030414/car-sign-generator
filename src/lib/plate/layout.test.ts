@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { glyphTransform, layoutFreeRun, layoutRun, pitchOf } from '@/lib/plate/layout';
 import { cnStandard } from '@/lib/standards/cn';
+import { FONT_METRICS } from '@/lib/plate/fontMetrics';
 import { usStandard } from '@/lib/standards/us';
 import { getPlateType } from '@/lib/standards';
 import type { CharClass, PlateType } from '@/types/standard';
@@ -37,14 +38,14 @@ describe('layoutRun（中国小型汽车 京A00001）', () => {
     expect(placed.every((g) => g !== null)).toBe(true);
   });
 
-  it('字符宽度符合表3（汉字 70mm，数字/字母 45mm）', () => {
-    expect(placed[0]!.cell.w).toBe(70); // 京
+  it('字符宽度符合图1（汉字/字母/数字均为 45mm 单元格）', () => {
+    expect(placed[0]!.cell.w).toBe(45); // 京
     expect(placed[1]!.cell.w).toBe(45); // A
     expect(placed[2]!.cell.w).toBe(45); // 0
   });
 
-  it('字符高度符合表3（汽车类 70mm）', () => {
-    for (const g of placed) expect(g!.cell.h).toBe(70);
+  it('字符高度符合图1（汽车类 90mm）', () => {
+    for (const g of placed) expect(g!.cell.h).toBe(90);
   });
 
   it('居中对齐：序列首尾相对牌面中线对称', () => {
@@ -58,13 +59,13 @@ describe('layoutRun（中国小型汽车 京A00001）', () => {
     expect(Math.abs(leftMargin - rightMargin)).toBeLessThan(0.5);
   });
 
-  it('相邻字符步进 = advance + gapAfter（汉字→字母：70+15+45...）', () => {
-    // 京(70,gapAfter15) → A：x 差 = 70+15 = 85
-    expect(placed[1]!.cell.x - placed[0]!.cell.x).toBeCloseTo(85, 3);
-    // A(45,gapAfter9) → 0：x 差 = 45+9 = 54
-    expect(placed[2]!.cell.x - placed[1]!.cell.x).toBeCloseTo(54, 3);
-    // 0(45,gapAfter9) → 0：x 差 = 54
-    expect(placed[3]!.cell.x - placed[2]!.cell.x).toBeCloseTo(54, 3);
+  it('相邻字符步进 = advance + gapAfter（图1：45+12；分隔点区 45+34）', () => {
+    // 京(45, gapAfter 12) → A：x 差 = 45+12 = 57
+    expect(placed[1]!.cell.x - placed[0]!.cell.x).toBeCloseTo(57, 3);
+    // A(45, gapAfter 34，含分隔点) → 0：x 差 = 45+34 = 79
+    expect(placed[2]!.cell.x - placed[1]!.cell.x).toBeCloseTo(79, 3);
+    // 0(45, gapAfter 12) → 0：x 差 = 57
+    expect(placed[3]!.cell.x - placed[2]!.cell.x).toBeCloseTo(57, 3);
   });
 });
 
@@ -82,7 +83,7 @@ describe('layoutRun（字段值不足时留空）', () => {
 });
 
 describe('layoutFreeRun（美国 ABC-1234 居中）', () => {
-  const us = usStandard.types[0];
+  const us = getPlateType('us-standard');
   const placed = layoutFreeRun(us.runs[0] as never, us, { code: 'ABC-1234' });
 
   it('展开为 8 个字符（含连字符）', () => {
@@ -118,22 +119,28 @@ describe('layoutFreeRun 右对齐（日本一连番号）', () => {
 });
 
 describe('glyphTransform（ink 精确拟合）', () => {
-  it('fill 模式：ink 缩放到精确的单元格宽高', () => {
-    const cls: CharClass = smallCar.charClasses.digit;
-    const cell = { x: 100, y: 30, w: 45, h: 70 };
+  it('等比模式：ink 高精确等于单元格高，且各字保持自然宽度', () => {
+    const cls: CharClass = smallCar.charClasses.serial;
+    const cell = { x: 100, y: 25, w: 45, h: 90 };
     const { transform, fontSize } = glyphTransform('0', cls, cell);
     // fontSize = 1（em 基准），transform 含 translate + scale
     expect(fontSize).toBe(1);
     expect(transform).toMatch(/^translate\(/);
     expect(transform).toMatch(/scale\(/);
-    // 缩放因子应使 ink 高 = 70mm。数字 0 的 ink 高比 ≈ 0.7236（Latin）
+    // '0' 的 ink 高取自字体度量（不同字体不同）
+    const zero = FONT_METRICS.CNPlate.glyphs['0'];
+    const inkH = zero.y1! - zero.y0!;
     const sy = parseFloat(transform.match(/scale\(([-\d.]+)\s+([-\d.]+)\)/)![2]);
-    expect(sy * 0.7236).toBeCloseTo(70, 0); // inkH_px × sy = 目标高
+    expect(sy * inkH).toBeCloseTo(90, 0);
+    // 等比模式下 '1' 不被拉宽：横向缩放与纵向一致，宽度由字形决定
+    const one = glyphTransform('1', cls, cell);
+    const m = one.transform.match(/scale\(([-\d.]+)\s+([-\d.]+)\)/)!;
+    expect(parseFloat(m[1])).toBeCloseTo(parseFloat(m[2]), 3);
   });
 
   it('无 ink 字形（空格）仅定位不缩放', () => {
-    const cls: CharClass = smallCar.charClasses.digit;
-    const cell = { x: 10, y: 20, w: 45, h: 70 };
+    const cls: CharClass = smallCar.charClasses.serial;
+    const cell = { x: 10, y: 25, w: 45, h: 90 };
     const { transform } = glyphTransform(' ', cls, cell);
     expect(transform).not.toMatch(/scale\(/);
     expect(transform).toMatch(/translate\(10 /);
@@ -141,8 +148,14 @@ describe('glyphTransform（ink 精确拟合）', () => {
 });
 
 describe('标准注册表完整性', () => {
-  it('中国 15 类版式齐全', () => {
-    expect(cnStandard.types.length).toBe(15);
+  it('中国 20 类版式齐全（表1 全部类别，含前后号牌与摩托系列）', () => {
+    expect(cnStandard.types.length).toBe(20);
+  });
+
+  it('普通摩托车为一字两行版式（图9）', () => {
+    const moto = getPlateType('cn-moto');
+    expect(moto.size).toEqual({ width: 220, height: 140 });
+    expect(moto.runs).toHaveLength(2);
   });
 
   it('每个类型都有 citation、fields、defaults', () => {

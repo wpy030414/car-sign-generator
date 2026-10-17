@@ -14,7 +14,7 @@
 
 import { useId, type ReactNode } from 'react';
 import { gradientVector, resolveFill } from '@/lib/plate/fill';
-import { glyphTransform, layoutAny } from '@/lib/plate/layout';
+import { glyphTransform, layoutAny, r } from '@/lib/plate/layout';
 import type {
   ComponentDecoration,
   Fill,
@@ -166,26 +166,39 @@ export function PlateSvg({
         <g key={ri}>
           {layoutAny(run, type, values).map((g, gi) => {
             if (!g) return null;
-            const { transform, fontSize } = glyphTransform(g.char, g.cls, g.cell);
+            const { transform, fontSize, hBold } = glyphTransform(g.char, g.cls, g.cell);
             const fill = g.cls.fill.kind === 'solid' ? g.cls.fill.color : '#000';
             const weight = g.cls.font.weight ?? 'normal';
+            // hBold：再绘制一份水平偏移副本，只加粗竖画（补偿各向异性压缩）
+            const copies = hBold > 0 ? [0, hBold / 2, hBold] : [0];
+            const tid = `${uid}-g${ri}-${gi}`;
             return (
-              <text
-                key={gi}
-                transform={transform}
-                fontSize={fontSize}
-                fontFamily={`'${g.cls.font.family}', sans-serif`}
-                fontWeight={weight}
-                fill={fill}
-                // 以 1em=1mm 基准绘制，transform 负责精确缩放定位
-                x={0}
-                y={0}
-                textAnchor="start"
-                dominantBaseline="alphabetic"
-                style={{ whiteSpace: 'pre' }}
-              >
-                {g.char}
-              </text>
+              <g key={gi}>
+                <text
+                    id={tid}
+                    transform={transform}
+                    fontSize={fontSize}
+                    fontFamily={`'${g.cls.font.family}', sans-serif`}
+                    fontWeight={weight}
+                    fill={fill}
+                    // 可选的非缩放描边（整字加粗）
+                    stroke={g.cls.outline ? fill : undefined}
+                    strokeWidth={g.cls.outline}
+                    vectorEffect={g.cls.outline ? 'non-scaling-stroke' : undefined}
+                    paintOrder={g.cls.outline ? 'stroke' : undefined}
+                    // 以 1em=1mm 基准绘制，transform 负责精确缩放定位
+                    x={0}
+                    y={0}
+                    textAnchor="start"
+                    dominantBaseline="alphabetic"
+                    style={{ whiteSpace: 'pre' }}
+                  >
+                    {g.char}
+                  </text>
+                {copies.slice(1).map((dx, k) => (
+                  <use key={k} href={`#${tid}`} transform={`translate(${r(dx)} 0)`} />
+                ))}
+              </g>
             );
           })}
         </g>

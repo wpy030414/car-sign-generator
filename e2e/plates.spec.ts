@@ -208,6 +208,38 @@ test.describe('类型切换', () => {
 });
 
 test.describe('URL 持久化', () => {
+  test('链接以单个 base64 配置参数承载全部状态', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-small-car');
+    await page.getByLabel('序号').fill('12345');
+    await page.locator('[role=switch]').first().click();
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('config'))
+      .toBeTruthy();
+
+    // 解析 config：base64url → UTF-8 JSON
+    const config = await page.evaluate(() => {
+      const raw = new URL(location.href).searchParams.get('config')!;
+      const b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+      return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))));
+    });
+    expect(config).toMatchObject({
+      region: 'CN',
+      typeId: 'cn-small-car',
+      values: { serial: '12345' },
+      showScrews: false,
+      exportLongEdge: 3840,
+    });
+    // 不应再有分散的 region/type/values 参数
+    expect([...new URL(page.url()).searchParams.keys()]).toEqual(['config']);
+
+    // 重开同一链接，状态应完整还原
+    await page.goto(page.url());
+    await expect(page.getByLabel('序号')).toHaveValue('12345');
+    await expect(page.locator('[role=switch]').first()).not.toBeChecked();
+    expect((await plateInfo(page))?.id).toBe('cn-small-car');
+  });
+
   test('带 query 的链接还原对应号牌', async ({ page }) => {
     const url =
       '/?region=JP&type=jp-commercial-mid&values=' +
@@ -225,7 +257,54 @@ test.describe('URL 持久化', () => {
   });
 });
 
+test.describe('新能源号牌背景', () => {
+  test('小型牌自下而上为 50% 纯绿 + 33.33% 绿白渐变 + 16.67% 纯白', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-ne-small');
+    const stops = await page.evaluate(() =>
+      [...document.querySelectorAll('svg[data-plate-svg] linearGradient stop')].map((s) => ({
+        offset: parseFloat(s.getAttribute('offset') ?? ''),
+        color: (s.getAttribute('stop-color') ?? '').toUpperCase(),
+      })),
+    );
+    expect(stops).toHaveLength(4);
+    // stop 方向为上→下：0~1/6 白、1/6~1/2 白→绿、1/2~1 纯绿
+    expect(stops.map((s) => s.color)).toEqual(['#FFFFFF', '#FFFFFF', '#25E148', '#25E148']);
+    expect(stops[0].offset).toBeCloseTo(0, 3);
+    expect(stops[1].offset).toBeCloseTo(16.667, 2);
+    expect(stops[2].offset).toBeCloseTo(50, 3);
+    expect(stops[3].offset).toBeCloseTo(100, 3);
+  });
+
+  test('新能源专用标识直径 32mm（半径 16mm）', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-ne-small');
+    const size = await page.evaluate(() => {
+      const img = document.querySelector('svg[data-plate-svg] image')!;
+      return { w: Number(img.getAttribute('width')), h: Number(img.getAttribute('height')) };
+    });
+    expect(size.w).toBeCloseTo(32, 1);
+    expect(size.h).toBeCloseTo(32, 1);
+  });
+});
+
 test.describe('导出设置', () => {
+  test('安装孔尺寸符合标准：汽车长圆孔 15×7，摩托圆孔 φ7', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-small-car');
+    const car = await page.evaluate(() => {
+      const r = document.querySelector('svg[data-plate-svg] rect[stroke="#999999"]')!;
+      return { w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')) };
+    });
+    expect(car.w).toBeCloseTo(15, 1);
+    expect(car.h).toBeCloseTo(7, 1);
+
+    await page.goto('/?region=CN&type=cn-moto');
+    const moto = await page.evaluate(() => {
+      const r = document.querySelector('svg[data-plate-svg] rect[stroke="#999999"]')!;
+      return { w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')) };
+    });
+    expect(moto.w).toBeCloseTo(7, 1);
+    expect(moto.h).toBeCloseTo(7, 1);
+  });
+
   test('安装孔开关生效', async ({ page }) => {
     await page.goto('/?region=CN&type=cn-small-car');
     const before = await page.locator('svg[data-plate-svg] rect[stroke="#999999"]').count();
@@ -233,6 +312,86 @@ test.describe('导出设置', () => {
     await page.locator('[role=switch]').first().click();
     const after = await page.locator('svg[data-plate-svg] rect[stroke="#999999"]').count();
     expect(after).toBe(0);
+  });
+
+  test('模拟冲压：字符以高度场 + 定向光生成浮雕，而非偏移副本', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-small-car');
+    const svg = page.locator('svg[data-plate-svg]');
+    const embossed = svg.locator('g[filter*="emboss"]');
+    const glyphs = await svg.locator('text').count(); // 未开启时 text 数 = 字符数
+    expect(glyphs).toBeGreaterThan(0);
+
+    // 默认关闭：没有滤镜组，也没有重复字符
+    expect(await embossed.count()).toBe(0);
+    expect(await svg.locator('filter').count()).toBe(0);
+
+    await page.locator('#emboss').click();
+
+    // 整层字符共用一个滤镜组（滤镜挂在 <g> 上，不在带 scale 的 <text> 上），
+    // 外加分隔点与 GA 36 的冲压边框
+    expect(await embossed.count()).toBe(3);
+    expect(await svg.locator('filter').count()).toBe(1);
+    expect(await svg.locator('g[filter*="emboss"] > g').count()).toBeGreaterThan(0);
+    // 边框（整板冲压）进入浮雕：边框 rect 位于滤镜组内
+    expect(await svg.locator('g[filter*="emboss"] rect[data-plate-border]').count()).toBe(1);
+    // 不再有偏移出来的亮/暗副本：text 数量不变
+    expect(await svg.locator('text').count()).toBe(glyphs);
+    expect(await svg.locator('text[fill-opacity]').count()).toBe(0);
+    // 分隔点同样走浮雕滤镜
+    expect(await svg.locator('g[filter*="emboss"] circle').count()).toBe(1);
+
+    // 滤镜管线：高度场 → 高光/漫反射 → 投射阴影
+    const pipeline = await svg.locator('filter').first().evaluate((f) => ({
+      sRGB: f.getAttribute('color-interpolation-filters'),
+      prims: [...f.children].map((c) => c.tagName),
+      azimuth: f.querySelector('feDistantLight')?.getAttribute('azimuth'),
+      elevation: f.querySelector('feDistantLight')?.getAttribute('elevation'),
+    }));
+    expect(pipeline.sRGB).toBe('sRGB');
+    for (const prim of [
+      'feGaussianBlur',
+      'feSpecularLighting',
+      'feDiffuseLighting',
+      'feComponentTransfer',
+      'feOffset',
+      'feFlood',
+    ]) {
+      expect(pipeline.prims).toContain(prim);
+    }
+    // 光从左上来（SVG y 轴向下，225°），阴影落向右下
+    expect(pipeline.azimuth).toBe('225');
+    expect(Number(pipeline.elevation)).toBeGreaterThan(0);
+  });
+
+  test('GA 36 边框：线外缘距牌边 3mm，外侧留一圈底色', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-small-car');
+    const rect = await page
+      .locator('svg[data-plate-svg] rect[data-plate-border]')
+      .evaluate((r) => ({
+        x: Number(r.getAttribute('x')),
+        y: Number(r.getAttribute('y')),
+        w: Number(r.getAttribute('width')),
+        h: Number(r.getAttribute('height')),
+        stroke: Number(r.getAttribute('stroke-width')),
+        rx: Number(r.getAttribute('rx')),
+      }));
+    // 牌边 → 3mm 底色 → 1.5mm 白边：rect 中心线内缩 3 + 0.75，宽高减去两侧 3.75
+    expect(rect.x).toBeCloseTo(3.75, 2);
+    expect(rect.y).toBeCloseTo(3.75, 2);
+    expect(rect.w).toBeCloseTo(440 - 7.5, 2);
+    expect(rect.h).toBeCloseTo(140 - 7.5, 2);
+    expect(rect.stroke).toBe(1.5);
+    // 圆角同样内缩：R10 - 3.75
+    expect(rect.rx).toBeCloseTo(6.25, 2);
+  });
+
+  test('印刷边框不参与浮雕（仅整板冲压的 GA 36 边框冲压）', async ({ page }) => {
+    await page.goto('/?region=US&type=us-standard');
+    const svg = page.locator('svg[data-plate-svg]');
+    await page.locator('#emboss').click();
+    // 边框存在，但不在滤镜组内
+    expect(await svg.locator('rect[data-plate-border]').count()).toBe(1);
+    expect(await svg.locator('g[filter*="emboss"] rect[data-plate-border]').count()).toBe(0);
   });
 
   test('分辨率可选 2K/4K/8K', async ({ page }) => {
@@ -327,5 +486,101 @@ test.describe('GA 36-2018 版式实测回归', () => {
     expect(info?.viewBox).toBe('0 0 440 220');
     const ys = await rows(page);
     expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(40);
+  });
+});
+
+test.describe('预览区缩放与全屏', () => {
+  // 缩放值写在舞台的 CSS 变量上，画布宽度由它参与 calc 计算
+  const zoomLevel = (page: import('@playwright/test').Page) =>
+    page
+      .locator('[data-plate-stage]')
+      .evaluate((el) => (el as HTMLElement).style.getPropertyValue('--plate-zoom').trim());
+
+  test('左下角 +/- 调节缩放，点击百分比重置', async ({ page }) => {
+    await page.goto('/');
+    await expect(zoomLevel(page)).resolves.toBe('1');
+
+    await page.getByRole('button', { name: '放大' }).click();
+    await expect(zoomLevel(page)).resolves.toBe('1.25');
+    await expect(page.getByRole('button', { name: '重置缩放为 100%' })).toHaveText('125%');
+
+    await page.getByRole('button', { name: '缩小' }).click();
+    await page.getByRole('button', { name: '缩小' }).click();
+    await expect(zoomLevel(page)).resolves.toBe('0.75');
+
+    await page.getByRole('button', { name: '重置缩放为 100%' }).click();
+    await expect(zoomLevel(page)).resolves.toBe('1');
+  });
+
+  test('100% 时左右留白相等，放大滚到尽头仍保留右侧留白', async ({ page }) => {
+    await page.goto('/');
+    const margins = () =>
+      page.evaluate(() => {
+        const vp = document.querySelector('[data-plate-viewport]') as HTMLElement;
+        const plate = document.querySelector('[data-plate-zoom]') as HTMLElement;
+        const a = vp.getBoundingClientRect();
+        const b = plate.getBoundingClientRect();
+        return {
+          left: Math.round(b.left - a.left),
+          right: Math.round(a.right - b.right),
+          overflowX: vp.scrollWidth - vp.clientWidth,
+        };
+      });
+
+    expect(await margins()).toMatchObject({ left: 40, right: 40, overflowX: 0 });
+
+    await page.getByRole('button', { name: '放大' }).click();
+    // 放大后画布居中：溢出量左右大致对称
+    const zoomed = await margins();
+    expect(zoomed.overflowX).toBeGreaterThan(0);
+    expect(Math.abs(zoomed.left - zoomed.right)).toBeLessThanOrEqual(2);
+
+    // 滚到最右端，右侧留白不得为 0
+    const end = await page.evaluate(() => {
+      const vp = document.querySelector('[data-plate-viewport]') as HTMLElement;
+      vp.scrollLeft = vp.scrollWidth;
+      const plate = document.querySelector('[data-plate-zoom]') as HTMLElement;
+      const a = vp.getBoundingClientRect();
+      const b = plate.getBoundingClientRect();
+      return Math.round(a.right - b.right);
+    });
+    expect(end).toBeGreaterThanOrEqual(39);
+    expect(end).toBeLessThanOrEqual(42);
+  });
+
+  test('缩放范围夹在 25%–300%，边界按钮禁用', async ({ page }) => {
+    await page.goto('/');
+    const zoomIn = page.getByRole('button', { name: '放大' });
+    const zoomOut = page.getByRole('button', { name: '缩小' });
+
+    // 100% → 300% 需 8 次；到顶后按钮禁用且不再增大
+    for (let i = 0; i < 8; i++) await zoomIn.click();
+    await expect(zoomLevel(page)).resolves.toBe('3');
+    await expect(zoomIn).toBeDisabled();
+
+    for (let i = 0; i < 11; i++) await zoomOut.click();
+    await expect(zoomLevel(page)).resolves.toBe('0.25');
+    await expect(zoomOut).toBeDisabled();
+  });
+
+  test('右下角进入/退出全屏，Esc 也可退出', async ({ page }) => {
+    await page.goto('/');
+    const stage = page.locator('[data-plate-stage]');
+    const toggle = page.getByRole('button', { name: '全屏预览' });
+
+    await expect(stage).not.toHaveAttribute('data-fullscreen', 'true');
+    await toggle.click();
+    await expect(stage).toHaveAttribute('data-fullscreen', 'true');
+    // 全屏时号牌仍在视野内，按钮切换为退出态
+    await expect(page.locator('svg[data-plate-svg]')).toBeVisible();
+    await expect(page.getByRole('button', { name: '退出全屏' })).toBeVisible();
+
+    await page.getByRole('button', { name: '退出全屏' }).click();
+    await expect(stage).not.toHaveAttribute('data-fullscreen', 'true');
+
+    await page.getByRole('button', { name: '全屏预览' }).click();
+    await expect(stage).toHaveAttribute('data-fullscreen', 'true');
+    await page.keyboard.press('Escape');
+    await expect(stage).not.toHaveAttribute('data-fullscreen', 'true');
   });
 });

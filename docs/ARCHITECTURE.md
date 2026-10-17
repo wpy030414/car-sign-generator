@@ -41,7 +41,7 @@
 | `components/plates/PlateSvg.tsx` | 通用 SVG 渲染引擎（纯组件，props = PlateType + values）：板体、边框、装饰、字符序列。同一份 DOM 供预览与导出复用。 |
 | `components/plates/EuBand.tsx` | 欧盟蓝带装饰：Reflex Blue 竖带 + 12 星环（Flag of Europe 几何）+ 国别代码（ink 拟合）。 |
 | `components/plates/CnDot.tsx` | 中国分隔点装饰：复用 `layoutRun` 按真实布局把 `<circle>` 放在字母/省份与序号之间。 |
-| `store/plateStore.ts` | Zustand：region/typeId/values/导出设置；URL query 持久化（debounce replaceState）。 |
+| `store/plateStore.ts` | Zustand：region/typeId/values/导出设置；URL 持久化为单个 `?config=<base64url(JSON)>`（debounce replaceState）。 |
 
 ## 模块关系
 
@@ -52,7 +52,7 @@
 
 ## 数据流
 
-**编辑流**：用户输入 → `Editor` 调 `setField` → store 更新 values → `PlateStage`/`PlatePreview` 重渲染 → `PlateSvg` 调 `layoutRun`/`layoutFreeRun` 算单元格 → `glyphTransform` 算每字符 transform → SVG 更新。同时 store debounce 写 URL query。
+**编辑流**：用户输入 → `Editor` 调 `setField` → store 更新 values → `PlateStage`/`PlatePreview` 重渲染 → `PlateSvg` 调 `layoutRun`/`layoutFreeRun` 算单元格 → `glyphTransform` 算每字符 transform → SVG 更新。同时 store debounce 把整份配置 JSON → base64url 写入 URL `config` 参数（`lib/plate/shareConfig.ts`）。
 
 **导出流**：点「下载 PNG」→ `ExportBar` 读 `svgRef.current` → `exportPlatePng`：克隆 SVG → `buildExportFontCss`（字体转 base64 `@font-face`）注入 `<style>` → 写入目标像素尺寸 → `assertNoExternalRefs` → `XMLSerializer` → `Blob` URL → `Image.decode` → `Canvas.drawImage`（scale = longEdge/max(W,H)）→ `toBlob('image/png')` → `downloadBlob`。
 

@@ -157,6 +157,7 @@ function stateType(sp: UsStateSpec): PlateType {
           { x: (US_PLATE.w + 177.8) / 2, y: 19 },
         ],
         r: 3.5,
+        height: 7, // 圆孔 φ7
         fill: '#E8E8E8',
         stroke: '#999999',
       },

@@ -37,18 +37,21 @@ export const CN_COLORS = {
   red: '#E60012', // 警/使/领/应急 用红字
   tempBlue: '#BCD9F0', // 临时行驶车「天（酞）蓝底纹」近似
   neOrange: '#E99F34', // 大型新能源 左幅橙
-  neGreen: '#47B033', // 新能源绿：取自官方专用标识内部下方色块（SVG .st3）
+  neGreen: '#25E148', // 新能源绿
 } as const;
 
 const solid = (color: string): Fill => ({ kind: 'solid', color });
 
 // 新能源渐变（表1：小型「渐变绿底」、大型「黄绿底」）
+// 小型牌底色自下而上分三段：底部 50% 纯绿 → 50%~83.33% 绿白渐变 → 顶部 16.67% 纯白。
+// 渐变 stop 方向为上→下（angle 180），换算后：0~1/6 白、1/6~1/2 白→绿、1/2~1 纯绿。
 const neSmallFill: Fill = {
   kind: 'gradient',
   angle: 180,
   stops: [
-    { at: 0, color: '#E9F8E3' }, // 浅绿（更浅，仍非白）
-    { at: 0.5, color: '#A8DD9C' },
+    { at: 0, color: CN_COLORS.white },
+    { at: 1 / 6, color: CN_COLORS.white },
+    { at: 1 / 2, color: CN_COLORS.neGreen },
     { at: 1, color: CN_COLORS.neGreen },
   ],
 };
@@ -63,6 +66,18 @@ const CAR_REAR = { w: 440, h: 220, r: 10, border: 1.5 };
 const NE = { w: 480, h: 140, r: 10, border: 1.5 };
 const MOTO = { w: 220, h: 140, r: 8, border: 1.5 };
 const TEMP = { w: 220, h: 140, r: 8, border: 1.5 };
+
+/**
+ * 中国号牌边框。
+ *
+ * - 几何（GA 36-2018 图1 尺寸链）：牌边向内 3mm 为底色，再向内是 1.5mm 白边，
+ *   即边框线外缘距牌边 3mm，外侧留一圈板体底色的细边；
+ * - 号牌为整块金属板冲压成型，边框与字符同为凸起面，开启「模拟冲压」时一并进入浮雕；
+ * - 其它国家为印刷描边，不参与。
+ */
+function cnBorder(width: number, color: string): PlateType['border'] {
+  return { width, fill: solid(color), inset: 3, emboss: true };
+}
 
 const PROV = '京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新';
 /** 表3：序号中不使用 I、O。 */
@@ -175,7 +190,8 @@ function carScrews(w = CAR.w, h = CAR.h) {
       { x: xL, y: yT }, { x: xR, y: yT },
       { x: xL, y: yB }, { x: xR, y: yB },
     ],
-    r: 4,
+    r: 7.5, // 长圆孔 15×7mm（图1 顶部尺寸链中的 15 为槽宽）
+    height: 7,
     fill: '#FFFFFF',
     stroke: '#999999',
   };
@@ -187,7 +203,8 @@ function motoScrews() {
     positions: [
       { x: 25, y: 15 }, { x: MOTO.w - 25, y: 15 },
     ],
-    r: 3.5,
+    r: 3.5, // 圆孔 φ7（图9：2×φ7）
+    height: 7,
     fill: '#FFFFFF',
     stroke: '#999999',
   };
@@ -334,7 +351,7 @@ types.push({
   citation: 'GA 36-2018 表1-4 / 图1（440×140，蓝底白字，字高 90）',
   size: { width: CAR.w, height: CAR.h },
   body: { fill: solid(CN_COLORS.blue), radius: CAR.r },
-  border: { width: CAR.border, fill: solid(CN_COLORS.white) },
+  border: cnBorder(CAR.border, CN_COLORS.white),
   charClasses: carClasses({ fg: CN_COLORS.white }),
   runs: [carRun({ dotAfter: 1, serials: 5 })],
   decorations: [carScrews(), dotDeco(1, CN_COLORS.white)],
@@ -351,7 +368,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图1（前号牌 440×140，黄底黑字）',
   size: { width: CAR.w, height: CAR.h },
   body: { fill: solid(CN_COLORS.yellow), radius: CAR.r },
-  border: { width: CAR.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(CAR.border, CN_COLORS.black),
   charClasses: carClasses({ fg: CN_COLORS.black }),
   runs: [carRun({ dotAfter: 1, serials: 5 })],
   decorations: [carScrews(), dotDeco(1, CN_COLORS.black)],
@@ -368,7 +385,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图6（后号牌 440×220，两行，黄底黑字）',
   size: { width: CAR_REAR.w, height: CAR_REAR.h },
   body: { fill: solid(CN_COLORS.yellow), radius: CAR_REAR.r },
-  border: { width: CAR_REAR.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(CAR_REAR.border, CN_COLORS.black),
   charClasses: { ...carClasses({ fg: CN_COLORS.black }), ...rearClasses(CN_COLORS.black) },
   runs: carRearRuns(),
   decorations: [carScrews(CAR_REAR.w, CAR_REAR.h), dotDeco(0, CN_COLORS.black, 0)],
@@ -385,7 +402,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图6（挂车 440×220，两行，黄底黑字）',
   size: { width: CAR_REAR.w, height: CAR_REAR.h },
   body: { fill: solid(CN_COLORS.yellow), radius: CAR_REAR.r },
-  border: { width: CAR_REAR.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(CAR_REAR.border, CN_COLORS.black),
   charClasses: { ...carClasses({ fg: CN_COLORS.black }), ...rearClasses(CN_COLORS.black) },
   runs: carRearRuns('挂'),
   decorations: [carScrews(CAR_REAR.w, CAR_REAR.h), dotDeco(0, CN_COLORS.black, 0)],
@@ -412,7 +429,7 @@ function neType(opts: {
     citation: 'GA 36-2018 表1 / 图7 / 图8（480×140，新能源，字高 90）',
     size: { width: NE.w, height: NE.h },
     body: { fill: opts.fill, radius: NE.r },
-    border: { width: NE.border, fill: solid(CN_COLORS.black) },
+    border: cnBorder(NE.border, CN_COLORS.black),
     charClasses: carClasses({ fg: CN_COLORS.black, hanW: 45, cellW: 43, gap: 9, wideGap: 49 }),
     runs: [{
       kind: 'run', primary: true,
@@ -434,7 +451,7 @@ function neType(opts: {
           }]
         : []),
       carScrews(NE.w, NE.h),
-      { kind: 'component' as const, name: 'cn-ne-emblem', props: { cx: 137, cy: 70, r: 8.5 } },
+      { kind: 'component' as const, name: 'cn-ne-emblem', props: { cx: 137, cy: 70, r: 16 } },
     ],
     fields: [fProv, fLetter, { ...fSerial(6), placeholder: opts.defaultSerial, help: opts.help }],
     defaults: { province: '京', letter: 'A', serial: opts.defaultSerial },
@@ -469,7 +486,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图1（黄底黑字，末位「学」）',
   size: { width: CAR.w, height: CAR.h },
   body: { fill: solid(CN_COLORS.yellow), radius: CAR.r },
-  border: { width: CAR.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(CAR.border, CN_COLORS.black),
   charClasses: carClasses({ fg: CN_COLORS.black }),
   runs: [carRun({ dotAfter: 1, serials: 4, suffixLiteral: '学' })],
   decorations: [carScrews(), dotDeco(1, CN_COLORS.black)],
@@ -486,7 +503,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图4（白底黑字，红「警」，点在省简称后）',
   size: { width: CAR.w, height: CAR.h },
   body: { fill: solid(CN_COLORS.white), radius: CAR.r },
-  border: { width: CAR.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(CAR.border, CN_COLORS.black),
   charClasses: carClasses({ fg: CN_COLORS.black }),
   runs: [carRun({ dotAfter: 0, serials: 4, suffixLiteral: '警', suffixRed: true })],
   decorations: [carScrews(), dotDeco(0, CN_COLORS.black)],
@@ -503,7 +520,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图2（黑底白字，红「使」，点在驻华机构编号后）',
   size: { width: CAR.w, height: CAR.h },
   body: { fill: solid(CN_COLORS.black), radius: CAR.r },
-  border: { width: CAR.border, fill: solid(CN_COLORS.white) },
+  border: cnBorder(CAR.border, CN_COLORS.white),
   charClasses: carClasses({ fg: CN_COLORS.white }),
   runs: [{
     kind: 'run', primary: true,
@@ -533,7 +550,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图3（黑底白字，红「领」，点在城市代码后）',
   size: { width: CAR.w, height: CAR.h },
   body: { fill: solid(CN_COLORS.black), radius: CAR.r },
-  border: { width: CAR.border, fill: solid(CN_COLORS.white) },
+  border: cnBorder(CAR.border, CN_COLORS.white),
   charClasses: carClasses({ fg: CN_COLORS.white }),
   runs: [{
     kind: 'run', primary: true,
@@ -569,7 +586,7 @@ for (const [id, ch, label] of [
     citation: 'GA 36-2018 表1 / 图1（港澳入出境车，黑底白字，末位「港」/「澳」）',
     size: { width: CAR.w, height: CAR.h },
     body: { fill: solid(CN_COLORS.black), radius: CAR.r },
-    border: { width: CAR.border, fill: solid(CN_COLORS.white) },
+    border: cnBorder(CAR.border, CN_COLORS.white),
     charClasses: carClasses({ fg: CN_COLORS.white }),
     runs: [carRun({ dotAfter: 1, serials: 4, suffixLiteral: ch })],
     decorations: [carScrews(), dotDeco(1, CN_COLORS.white)],
@@ -587,7 +604,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图9（220×140，两行：京·A / 5 位序号，黄底黑字）',
   size: { width: MOTO.w, height: MOTO.h },
   body: { fill: solid(CN_COLORS.yellow), radius: MOTO.r },
-  border: { width: MOTO.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(MOTO.border, CN_COLORS.black),
   charClasses: motoClasses(CN_COLORS.black),
   runs: motoRuns({ serials: 5, topRight: 'letter' }),
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.black, 0)],
@@ -604,7 +621,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图9（220×140，两行，蓝底白字）',
   size: { width: MOTO.w, height: MOTO.h },
   body: { fill: solid(CN_COLORS.blue), radius: MOTO.r },
-  border: { width: MOTO.border, fill: solid(CN_COLORS.white) },
+  border: cnBorder(MOTO.border, CN_COLORS.white),
   charClasses: motoClasses(CN_COLORS.white),
   runs: motoRuns({ serials: 5, topRight: 'letter' }),
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.white, 0)],
@@ -621,7 +638,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图9（220×140，两行，黄底黑字）',
   size: { width: MOTO.w, height: MOTO.h },
   body: { fill: solid(CN_COLORS.yellow), radius: MOTO.r },
-  border: { width: MOTO.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(MOTO.border, CN_COLORS.black),
   charClasses: motoClasses(CN_COLORS.black),
   runs: motoRuns({ serials: 4, topRight: 'letter', bottomSuffixLiteral: '学' }),
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.black, 0)],
@@ -638,7 +655,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图12（220×140，两行，白底黑字，红「警」）',
   size: { width: MOTO.w, height: MOTO.h },
   body: { fill: solid(CN_COLORS.white), radius: MOTO.r },
-  border: { width: MOTO.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(MOTO.border, CN_COLORS.black),
   charClasses: motoClasses(CN_COLORS.black),
   runs: motoRuns({ serials: 4, topRight: 'letter', bottomSuffixLiteral: '警', bottomSuffixRed: true }),
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.black, 0)],
@@ -655,7 +672,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图10（220×140，两行，黑底白字，红「使」）',
   size: { width: MOTO.w, height: MOTO.h },
   body: { fill: solid(CN_COLORS.black), radius: MOTO.r },
-  border: { width: MOTO.border, fill: solid(CN_COLORS.white) },
+  border: cnBorder(MOTO.border, CN_COLORS.white),
   charClasses: {
     ...motoClasses(CN_COLORS.white),
     motoSerialWide: mkClass('motoSerialWide', { width: 35, height: 48, color: CN_COLORS.white, gapAfter: 12.5, cellFill: true }),
@@ -690,7 +707,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图11（220×140，两行，沪·领 / 5 位序号）',
   size: { width: MOTO.w, height: MOTO.h },
   body: { fill: solid(CN_COLORS.black), radius: MOTO.r },
-  border: { width: MOTO.border, fill: solid(CN_COLORS.white) },
+  border: cnBorder(MOTO.border, CN_COLORS.white),
   charClasses: motoClasses(CN_COLORS.white),
   runs: motoRuns({ serials: 5, topRight: 'suffix', topSuffixLiteral: '领', topSuffixRed: true }),
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.white, 0)],
@@ -707,7 +724,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图19（300×165，两行：京·M / 5 位序号，黄底黑字）',
   size: { width: 300, height: 165 },
   body: { fill: solid(CN_COLORS.yellow), radius: 10 },
-  border: { width: 1.5, fill: solid(CN_COLORS.black) },
+  border: cnBorder(1.5, CN_COLORS.black),
   charClasses: {
     lowHanzi: mkClass('lowHanzi', { width: 45, height: 45, color: CN_COLORS.black, gapAfter: 34, font: han, stroke: 10, cellFill: true }),
     lowLetter: mkClass('lowLetter', { width: 45, height: 45, color: CN_COLORS.black, gapAfter: 0, cellFill: true }),
@@ -727,7 +744,7 @@ types.push({
     },
   ],
   decorations: [
-    { kind: 'screws', positions: [{ x: 15, y: 12.5 }, { x: 285, y: 12.5 }], r: 4, fill: '#FFFFFF', stroke: '#999999' },
+    { kind: 'screws', positions: [{ x: 15, y: 12.5 }, { x: 285, y: 12.5 }], r: 7.5, height: 7, fill: '#FFFFFF', stroke: '#999999' },
     dotDeco(0, CN_COLORS.black, 0),
   ],
   fields: [fProv, fLetter, fSerial(5)],
@@ -743,7 +760,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 附录 B.19（220×140，纸质，天（酞）蓝底纹黑字）',
   size: { width: TEMP.w, height: TEMP.h },
   body: { fill: solid(CN_COLORS.tempBlue), radius: TEMP.r },
-  border: { width: TEMP.border, fill: solid(CN_COLORS.black) },
+  border: cnBorder(TEMP.border, CN_COLORS.black),
   charClasses: {
     // 220mm 内排 7 个字：30 + 6×27 + 6×3.5 = 213mm，左右各留 3.5mm
     hanzi: mkClass('hanzi', { width: 30, height: 60, color: CN_COLORS.black, gapAfter: 3.5, font: han, stroke: 12, cellFill: true }),

@@ -9,7 +9,7 @@
 - **通用渲染器**（`src/components/plates/PlateSvg.tsx`）：
   - 纯组件，props = `{ type, values, componentDecorations, showScrews, svgRef }`，不访问 store。
   - `<svg viewBox="0 0 W H">`（W/H = 号牌 mm 尺寸），**屏幕渲染时不设 width/height 属性**，由 CSS `width:100%` + `preserveAspectRatio` 自适应容器。
-  - 依次绘制：板体 `<rect>`（含 rx 圆角、纯色/渐变填充）→ 边框（内缩描边，width=0 时不画）→ 装饰（rect/circle/screws/component）→ 字符序列（每个 `<text>` 带 `glyphTransform` 算出的 transform）。
+  - 依次绘制：板体 `<rect>`（含 rx 圆角、纯色/渐变填充）→ 边框（内缩描边，width=0 时不画；`border.inset` >0 时边框外侧再留一圈板体底色，GA 36 为 3mm 底色 + 1.5mm 白边）→ 装饰（rect/circle/screws/component）→ 字符序列（每个 `<text>` 带 `glyphTransform` 算出的 transform）。
   - 渐变经 `fill.ts` 生成 `<linearGradient>` defs，ID 用 `useId()` 保证全页唯一（多牌同屏不冲突）。
   - 特殊几何装饰经 `componentDecorations` 注册表分发（欧盟 `eu-band`、中国 `cn-dot`）。
 - **字体加载**（`src/lib/plate/fonts.ts`）：

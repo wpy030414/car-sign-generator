@@ -20,6 +20,8 @@ export default function App() {
   const values = usePlateStore((s) => s.values);
   const showScrews = usePlateStore((s) => s.showScrews);
   const setShowScrews = usePlateStore((s) => s.setShowScrews);
+  const emboss = usePlateStore((s) => s.emboss);
+  const setEmboss = usePlateStore((s) => s.setEmboss);
   const type = getPlateType(typeId);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -37,7 +39,7 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
           {/* 左：编辑器 */}
-          <Card className="h-fit lg:sticky lg:top-6">
+          <Card className="h-fit py-0 lg:sticky lg:top-6">
             <CardContent className="p-5">
               <Editor />
             </CardContent>
@@ -45,9 +47,15 @@ export default function App() {
 
           {/* 右：预览 + 导出 */}
           <div className="flex flex-col gap-6">
-            <PlateStage ref={svgRef} type={type} values={values} showScrews={showScrews} />
+            <PlateStage
+              ref={svgRef}
+              type={type}
+              values={values}
+              showScrews={showScrews}
+              emboss={emboss}
+            />
 
-            <Card>
+            <Card className="py-0">
               <CardContent className="flex flex-col gap-5 p-5">
                 <ExportBar type={type} svgRef={svgRef} />
 
@@ -65,6 +73,18 @@ export default function App() {
                     checked={showScrews}
                     onCheckedChange={setShowScrews}
                   />
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="emboss" className="text-sm">
+                      模拟冲压
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      高度场 + 左上定向光，模拟冲压成型的浮雕感
+                    </p>
+                  </div>
+                  <Switch id="emboss" checked={emboss} onCheckedChange={setEmboss} />
                 </div>
               </CardContent>
             </Card>

@@ -207,7 +207,10 @@ export interface RectDecoration {
 export interface ScrewDecoration {
   kind: 'screws';
   positions: { x: Mm; y: Mm }[];
+  /** 孔半宽（mm）：孔宽 = 2r；圆孔时即半径 */
   r: Mm;
+  /** 孔高（mm）；缺省为 r（2:1 长圆孔）。圆孔请设为 2r */
+  height?: Mm;
   fill?: Color;
   stroke?: Color;
 }
@@ -248,7 +251,21 @@ export interface PlateType {
   size: { width: Mm; height: Mm };
   body: { fill: Fill; radius: Mm };
   /** 边框（内缩描边）；width=0 表示无边框 */
-  border: { width: Mm; fill: Fill };
+  border: {
+    width: Mm;
+    fill: Fill;
+    /**
+     * 边框线外缘到号牌边缘的距离（mm）。>0 时边框外侧留出一圈板体底色，
+     * 如 GA 36 号牌：牌边 → 3mm 底色 → 1.5mm 白边。缺省 0 = 贴边描边。
+     */
+    inset?: Mm;
+    /**
+     * 模拟冲压时边框是否参与浮雕。
+     * 整块冲压成型的号牌（如 GA 36 中国号牌）边框与字符同为凸起面；
+     * 印刷描边（欧盟/美国/日本）保持平贴，不加浮雕。
+     */
+    emboss?: boolean;
+  };
   charClasses: Record<string, CharClass>;
   runs: Run[];
   decorations: Decoration[];

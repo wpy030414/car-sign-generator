@@ -20,11 +20,17 @@ const DECORATIONS: Record<string, DecorationRenderer> = {
     <EuBand dec={dec} type={ctx.type} values={ctx.values} idPrefix={ctx.idPrefix} />
   ),
   'cn-dot': (dec: ComponentDecoration, ctx) => (
-    <CnDot dec={dec} type={ctx.type} values={ctx.values} />
+    <CnDot
+      dec={dec}
+      type={ctx.type}
+      values={ctx.values}
+      emboss={ctx.emboss}
+      embossFilterId={ctx.embossFilterId}
+    />
   ),
   'cn-ne-emblem': (dec: ComponentDecoration) => {
     const p = (dec.props ?? {}) as { cx?: number; cy?: number; r?: number };
-    return <CnNeEmblem cx={p.cx ?? 137} cy={p.cy ?? 70} r={p.r ?? 8.5} />;
+    return <CnNeEmblem cx={p.cx ?? 137} cy={p.cy ?? 70} r={p.r ?? 16} />;
   },
   'cn-ne-panel': (dec: ComponentDecoration) => {
     const p = (dec.props ?? {}) as {
@@ -47,12 +53,21 @@ export interface PlatePreviewProps {
   type: PlateType;
   values: Record<string, string>;
   showScrews?: boolean;
+  /** 是否模拟冲压 */
+  emboss?: boolean;
   /** 导出时用于拿到 svg 元素 */
   svgRef?: React.Ref<SVGSVGElement>;
   className?: string;
 }
 
-export function PlatePreview({ type, values, showScrews = true, svgRef, className }: PlatePreviewProps) {
+export function PlatePreview({
+  type,
+  values,
+  showScrews = true,
+  emboss = false,
+  svgRef,
+  className,
+}: PlatePreviewProps) {
   useEffect(() => {
     let alive = true;
     const fonts = fontsOfType(type);
@@ -75,6 +90,7 @@ export function PlatePreview({ type, values, showScrews = true, svgRef, classNam
         values={values}
         componentDecorations={DECORATIONS}
         showScrews={showScrews}
+        emboss={emboss}
         svgRef={svgRef}
       />
     </div>

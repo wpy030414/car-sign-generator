@@ -14,9 +14,12 @@ export interface CnDotProps {
   dec: ComponentDecoration;
   type: PlateType;
   values: Record<string, string>;
+  /** 点也是冲压成型的（新能源标识除外） */
+  emboss?: boolean;
+  embossFilterId?: string;
 }
 
-export function CnDot({ dec, type, values }: CnDotProps) {
+export function CnDot({ dec, type, values, emboss = false, embossFilterId }: CnDotProps) {
   const props = (dec.props ?? {}) as { runIndex?: number; after?: number; r?: number; color?: string };
   const runIndex = props.runIndex ?? 0;
   const after = props.after ?? 1; // 默认在第 2 个字符（字母）之后
@@ -37,5 +40,11 @@ export function CnDot({ dec, type, values }: CnDotProps) {
   // 垂直居中于字符高度
   const cy = letter.cell.y + letter.cell.h / 2;
 
-  return <circle cx={cx} cy={cy} r={r} fill={color} />;
+  // 冲压与字符共用同一套「高度场 + 定向光」滤镜：圆点会得到连续的法线明暗，
+  // 不再是两份错位剪影拼出来的假高光。
+  return (
+    <g filter={emboss && embossFilterId ? `url(#${embossFilterId})` : undefined}>
+      <circle cx={cx} cy={cy} r={r} fill={color} />
+    </g>
+  );
 }

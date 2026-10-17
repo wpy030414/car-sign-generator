@@ -108,6 +108,7 @@ function usType(opts: {
           { x: (PLATE.w + HOLE_SPACING) / 2, y: HOLE_Y },
         ],
         r: HOLE_D / 2,
+        height: HOLE_D, // 圆孔 φ7
         fill: '#E8E8E8',
         stroke: '#999999',
       },

@@ -220,7 +220,7 @@ function carRun(opts: {
     });
   }
   return {
-    kind: 'run' as const,
+    kind: 'run' as const, primary: true,
     origin: { x: 0, y: (CAR.h - 90) / 2 },
     gap: 12,
     align: 'center' as const,
@@ -236,7 +236,7 @@ function carRearRuns(suffixLiteral?: string): Run[] {
   if (suffixLiteral) bottom.push({ classId: 'bigSuffix', literal: suffixLiteral });
   return [
     {
-      kind: 'run',
+      kind: 'run', primary: true,
       origin: { x: 0, y: 15 },
       gap: 25,
       align: 'center',
@@ -246,7 +246,7 @@ function carRearRuns(suffixLiteral?: string): Run[] {
       ],
     },
     {
-      kind: 'run',
+      kind: 'run', primary: true,
       origin: { x: 0, y: 90 },
       gap: 15,
       align: 'center',
@@ -305,8 +305,8 @@ function motoRuns(opts: {
     });
   }
   return [
-    { kind: 'run' as const, origin: { x: 0, y: 10 }, gap: 30, align: 'center' as const, slots: topSlots },
-    { kind: 'run' as const, origin: { x: 0, y: 70 }, gap: 10, align: 'center' as const, slots: bottomSlots },
+    { kind: 'run' as const, primary: true, origin: { x: 0, y: 10 }, gap: 30, align: 'center' as const, slots: topSlots },
+    { kind: 'run' as const, primary: true, origin: { x: 0, y: 70 }, gap: 10, align: 'center' as const, slots: bottomSlots },
   ];
 }
 
@@ -415,7 +415,7 @@ function neType(opts: {
     border: { width: NE.border, fill: solid(CN_COLORS.black) },
     charClasses: carClasses({ fg: CN_COLORS.black, hanW: 45, cellW: 43, gap: 9, wideGap: 49 }),
     runs: [{
-      kind: 'run',
+      kind: 'run', primary: true,
       origin: { x: 0, y: (NE.h - 90) / 2 },
       gap: 9,
       align: 'center',
@@ -506,7 +506,7 @@ types.push({
   border: { width: CAR.border, fill: solid(CN_COLORS.white) },
   charClasses: carClasses({ fg: CN_COLORS.white }),
   runs: [{
-    kind: 'run',
+    kind: 'run', primary: true,
     origin: { x: 0, y: (CAR.h - 90) / 2 },
     gap: 12,
     align: 'center',
@@ -536,7 +536,7 @@ types.push({
   border: { width: CAR.border, fill: solid(CN_COLORS.white) },
   charClasses: carClasses({ fg: CN_COLORS.white }),
   runs: [{
-    kind: 'run',
+    kind: 'run', primary: true,
     origin: { x: 0, y: (CAR.h - 90) / 2 },
     gap: 12,
     align: 'center',
@@ -662,11 +662,11 @@ types.push({
   },
   runs: [
     {
-      kind: 'run', origin: { x: 0, y: 11.5 }, gap: 12.5, align: 'center',
+      kind: 'run', primary: true, origin: { x: 0, y: 11.5 }, gap: 12.5, align: 'center',
       slots: [0, 1, 2].map((i) => ({ classId: 'motoSerialWide', field: 'serial1', charIndex: i })),
     },
     {
-      kind: 'run', origin: { x: 0, y: 79.5 }, gap: 12.5, align: 'center',
+      kind: 'run', primary: true, origin: { x: 0, y: 79.5 }, gap: 12.5, align: 'center',
       slots: [
         ...[0, 1, 2].map((i) => ({ classId: 'motoSerialWide', field: 'serial2', charIndex: i })),
         { classId: 'motoSuffixRed', literal: '使' },
@@ -696,7 +696,7 @@ types.push({
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.white, 0)],
   fields: [fProv, fSerial(5)],
   defaults: { province: '沪', serial: '22478' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][0-9]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新]领[0-9]{5}$/,
   sample: '沪·领 / 22478',
 });
 
@@ -715,14 +715,14 @@ types.push({
   },
   runs: [
     {
-      kind: 'run', origin: { x: 0, y: 10 }, gap: 34, align: 'center',
+      kind: 'run', primary: true, origin: { x: 0, y: 10 }, gap: 34, align: 'center',
       slots: [
         { classId: 'lowHanzi', field: 'province', charIndex: 0 },
         { classId: 'lowLetter', field: 'letter', charIndex: 0 },
       ],
     },
     {
-      kind: 'run', origin: { x: 0, y: 65 }, gap: 12, align: 'center',
+      kind: 'run', primary: true, origin: { x: 0, y: 65 }, gap: 12, align: 'center',
       slots: [0, 1, 2, 3, 4].map((i) => ({ classId: 'lowSerial', field: 'serial', charIndex: i })),
     },
   ],
@@ -751,7 +751,7 @@ types.push({
     digit: mkClass('digit', { width: 27, height: 60, color: CN_COLORS.black, gapAfter: 3.5, cellFill: true }),
   },
   runs: [{
-    kind: 'run',
+    kind: 'run', primary: true,
     origin: { x: 0, y: (TEMP.h - 60) / 2 },
     gap: 3.5,
     align: 'center',

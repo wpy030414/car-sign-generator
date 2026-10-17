@@ -37,7 +37,7 @@
 | `lib/plate/fonts.ts` | 字体：屏幕 `@font-face` 注入 + `document.fonts` 加载；导出用 fetch→base64 data URI 缓存。 |
 | `lib/plate/export.ts` | 4K 导出：克隆 SVG → 内联 base64 字体 → 序列化 → `Image` → `Canvas` → PNG `toBlob` → 下载。含 `assertNoExternalRefs` 防画布污染。 |
 | `lib/plate/fill.ts` | `Fill`（纯色/线性渐变）→ SVG paint + `<linearGradient>` defs；CSS 角度→SVG 渐变向量。 |
-| `lib/plate/validate.ts` | 字段级（charset/长度）+ 整串级（pattern）校验，`sanitizeInput` 输入即时过滤。 |
+| `lib/plate/validate.ts` | 字段级（charset/长度）+ 整串级（pattern，只针对 `primary` 布局序列组成的注册号主串）校验，`sanitizeInput` 输入即时过滤。 |
 | `components/plates/PlateSvg.tsx` | 通用 SVG 渲染引擎（纯组件，props = PlateType + values）：板体、边框、装饰、字符序列。同一份 DOM 供预览与导出复用。 |
 | `components/plates/EuBand.tsx` | 欧盟蓝带装饰：Reflex Blue 竖带 + 12 星环（Flag of Europe 几何）+ 国别代码（ink 拟合）。 |
 | `components/plates/CnDot.tsx` | 中国分隔点装饰：复用 `layoutRun` 按真实布局把 `<circle>` 放在字母/省份与序号之间。 |

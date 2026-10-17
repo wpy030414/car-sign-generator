@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildPlateString, sanitizeInput, validateField, validatePlate } from '@/lib/plate/validate';
-import { getPlateType } from '@/lib/standards';
+import { getPlateType, STANDARDS, TYPE_REGISTRY } from '@/lib/standards';
 
 const smallCar = getPlateType('cn-small-car');
 
@@ -71,5 +71,40 @@ describe('validatePlate', () => {
     expect(r.ok).toBe(false);
     expect(r.fieldErrors.length).toBeGreaterThan(0);
     expect(r.patternError).toBeUndefined(); // 字段错时不查 pattern
+  });
+});
+
+describe('主串组装只含注册号', () => {
+  it('中国号牌固定尾字进入主串', () => {
+    const trailer = getPlateType('cn-trailer');
+    expect(buildPlateString(trailer, { ...trailer.defaults })).toBe('京A0001挂');
+    const coach = getPlateType('cn-coach');
+    expect(buildPlateString(coach, { ...coach.defaults })).toBe('京A0001学');
+  });
+
+  it('美国州牌的州名/口号不进入主串', () => {
+    const al = getPlateType('us-al');
+    expect(buildPlateString(al, { ...al.defaults })).toBe('1AB1234');
+  });
+
+  it('欧盟国别代码/地区代码不进入主串', () => {
+    const fr = getPlateType('eu-fr');
+    expect(buildPlateString(fr, { ...fr.defaults })).toBe('AA-123-AA');
+  });
+});
+
+describe('预设数据', () => {
+  it('所有类型的默认值都通过整串校验', () => {
+    const bad: string[] = [];
+    for (const std of STANDARDS) {
+      for (const t of std.types) {
+        const type = TYPE_REGISTRY[t.id];
+        const r = validatePlate(type, { ...type.defaults });
+        if (!r.ok) {
+          bad.push(`${std.region}/${type.id}: ${buildPlateString(type, type.defaults)} ${JSON.stringify(r.fieldErrors)} ${r.patternError ?? ''}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });

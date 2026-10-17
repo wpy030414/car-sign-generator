@@ -156,6 +156,33 @@ test.describe('校验', () => {
   });
 });
 
+test.describe('预设合法性', () => {
+  // 回归：整串校验曾把所有字段（含州名/口号、国别代码）拼进注册号，
+  // 且漏掉中国号牌的固定尾字，导致大量预设被误判为「不符合格式」。
+  const presets: [string, string][] = [
+    ['/?region=CN&type=cn-trailer', '挂车（固定尾字「挂」）'],
+    ['/?region=CN&type=cn-coach', '教练汽车（固定尾字「学」）'],
+    ['/?region=CN&type=cn-police', '警用汽车（固定尾字「警」）'],
+    ['/?region=CN&type=cn-embassy', '使馆汽车（固定尾字「使」）'],
+    ['/?region=CN&type=cn-consulate', '领馆汽车（固定尾字「领」）'],
+    ['/?region=CN&type=cn-consulate-moto', '领馆摩托车（两行 + 用途字）'],
+    ['/?region=US&type=us-al', '阿拉巴马州（州名/口号不参与注册号）'],
+    ['/?region=US&type=us-co', '科罗拉多州'],
+    ['/?region=US&type=us-dc', '华盛顿特区（长口号）'],
+    ['/?region=EU&type=eu-be', '比利时（含连字符）'],
+    ['/?region=EU&type=eu-hr', '克罗地亚（10 位注册号）'],
+    ['/?region=EU&type=eu-ie', '爱尔兰（11 位注册号）'],
+    ['/?region=EU&type=eu-fr', '法国（右侧地区带不参与注册号）'],
+  ];
+
+  for (const [url, name] of presets) {
+    test(`${name} 预设显示合法`, async ({ page }) => {
+      await page.goto(url);
+      await expect(page.getByText('合法号牌')).toBeVisible();
+    });
+  }
+});
+
 test.describe('类型切换', () => {
   test('中国切换到警用号牌（点在省份后 + 红警字）', async ({ page }) => {
     await page.goto('/?region=CN&type=cn-small-car');

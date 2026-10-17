@@ -89,7 +89,7 @@ function usType(opts: {
     },
     runs: [
       {
-        kind: 'free',
+        kind: 'free', primary: true,
         // 序列整体居中（各州边距不一，居中更通用）；左右各留 12mm 边距
         origin: { x: 12, y: (PLATE.h - CAP) / 2 },
         gap: GAP,

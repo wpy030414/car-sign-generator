@@ -14,7 +14,7 @@
   - 显示当前类型的 citation（标准出处）。
 - **校验**（`src/lib/plate/validate.ts`）：
   - 字段级：`validateField` 检查 minLength/maxLength + charset，返回错误串或 null。
-  - 整串级：`buildPlateString` 按字段顺序拼接 → `type.pattern` 正则校验。
+  - 整串级：`buildPlateString` 按布局顺序拼接**注册号主串**（仅 `primary` 序列；含固定字面量槽位，排除州名/口号/国别代码等装饰文字）→ `type.pattern` 正则校验。
   - `validatePlate`：字段级错误优先（有字段错时不查 pattern）；返回 `{ ok, fieldErrors, patternError }`。
   - `sanitizeInput`：输入即时约束（charset 为空串表示不限制，如日本地名汉字）。
 - **校验状态展示**（`src/components/PlateStage.tsx`）：预览下方信息条显示物理尺寸（mm）、比例、合法/非法徽章（非法时显示具体原因）。

@@ -130,7 +130,7 @@ function euType(opts: {
     },
     runs: [
       {
-        kind: 'free',
+        kind: 'free', primary: true,
         origin: { x: BAND_W + MARGIN_LEFT, y: CHAR_Y },
         gap: CHAR_GAP,
         field: 'code',
@@ -158,7 +158,7 @@ function euType(opts: {
         : []),
     ],
     fields: [
-      { key: 'code', label: '注册号', maxLength: 9, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -', placeholder: opts.placeholder, help: opts.help },
+      { key: 'code', label: '注册号', maxLength: 12, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -', placeholder: opts.placeholder, help: opts.help },
       { key: 'country', label: '国别代码', maxLength: 3, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', placeholder: opts.country, help: '蓝带内星环下方' },
       ...(opts.rightBand
         ? [{ key: 'region', label: '地区代码', maxLength: 3, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', placeholder: opts.region ?? 'ARA', help: '右侧蓝带内' }]
@@ -170,7 +170,7 @@ function euType(opts: {
       ...(opts.rightBand ? { region: opts.region ?? 'ARA' } : {}),
     },
     sample: opts.sample,
-    pattern: /^[A-Z0-9][A-Z0-9 -]{0,8}$/,
+    pattern: /^[A-Z0-9][A-Z0-9 -]{0,10}$/,
   };
 }
 

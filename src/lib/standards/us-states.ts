@@ -139,7 +139,7 @@ function stateType(sp: UsStateSpec): PlateType {
         align: 'center', width: US_PLATE.w - 20,
       },
       {
-        kind: 'free', origin: { x: 24, y: 38 }, gap: 12.5, field: 'code',
+        kind: 'free', primary: true, origin: { x: 24, y: 38 }, gap: 12.5, field: 'code',
         auto: { digit: 'code', letter: 'code', other: 'code' },
         align: 'center', width: US_PLATE.w - 48, shrinkToFit: true,
       },
@@ -163,8 +163,8 @@ function stateType(sp: UsStateSpec): PlateType {
     ],
     fields: [
       { key: 'code', label: '序号', maxLength: 8, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -', placeholder: sp.sample, help: sp.help },
-      { key: 'topText', label: '州名', maxLength: 22, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ .-', placeholder: sp.top, help: '牌面顶部文字' },
-      { key: 'bottomText', label: '口号', maxLength: 30, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,\'/-', placeholder: sp.bottom ?? '', help: '牌面底部文字（可留空）' },
+      { key: 'topText', label: '州名', maxLength: 22, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .-', placeholder: sp.top, help: '牌面顶部文字' },
+      { key: 'bottomText', label: '口号', maxLength: 40, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,\'/-', placeholder: sp.bottom ?? '', help: '牌面底部文字（可留空）' },
     ],
     defaults: { code: sp.sample, topText: sp.top, bottomText: sp.bottom ?? '' },
     sample: sp.sample,

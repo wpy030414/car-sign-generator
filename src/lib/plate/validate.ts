@@ -45,12 +45,35 @@ export function validateField(spec: FieldSpec, value: string): string | null {
   return null;
 }
 
-/** 组装完整号牌串（用于 pattern 校验与展示）。 */
+/**
+ * 组装注册号主串（用于 pattern 校验与展示）。
+ *
+ * 只拼接标记了 `primary` 的布局序列：装饰性文字（美国州名/口号、欧盟右侧
+ * 地区带等）不参与，固定字面量槽位（中国号牌尾字「挂/学/警/使/领/港/澳」）
+ * 则按布局顺序进入主串。未标记任何 primary 时回退到全部序列。
+ */
 export function buildPlateString(type: PlateType, values: Record<string, string>): string {
-  return type.fields
-    .map((f) => values[f.key] ?? '')
-    .filter((s) => s.length > 0)
-    .join('');
+  const primary = type.runs.filter((r) => r.primary);
+  const runs = primary.length > 0 ? primary : type.runs;
+  const parts: string[] = [];
+  for (const run of runs) {
+    if (run.kind === 'free') {
+      const v = values[run.field] ?? '';
+      if (v) parts.push(v);
+      continue;
+    }
+    for (const slot of run.slots) {
+      if (slot.literal !== undefined) {
+        parts.push(slot.literal);
+        continue;
+      }
+      if (!slot.field) continue;
+      // 按码点取字符（汉字/假名均为单码点，与布局的 charIndex 语义一致）
+      const ch = Array.from(values[slot.field] ?? '')[slot.charIndex ?? 0];
+      if (ch !== undefined) parts.push(ch);
+    }
+  }
+  return parts.join('');
 }
 
 /** 校验整个号牌。 */

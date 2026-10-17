@@ -8,6 +8,7 @@
 
 import { useEffect } from 'react';
 import { CnDot } from './plates/CnDot';
+import { CnNeEmblem, CnNeGreenPanel } from './plates/CnNeEmblem';
 import { EuBand } from './plates/EuBand';
 import { PlateSvg, type DecorationRenderer } from './plates/PlateSvg';
 import { ensureFontsLoaded, warmFontCache } from '@/lib/plate/fonts';
@@ -21,6 +22,25 @@ const DECORATIONS: Record<string, DecorationRenderer> = {
   'cn-dot': (dec: ComponentDecoration, ctx) => (
     <CnDot dec={dec} type={ctx.type} values={ctx.values} />
   ),
+  'cn-ne-emblem': (dec: ComponentDecoration) => {
+    const p = (dec.props ?? {}) as { cx?: number; cy?: number; r?: number };
+    return <CnNeEmblem cx={p.cx ?? 137} cy={p.cy ?? 70} r={p.r ?? 8.5} />;
+  },
+  'cn-ne-panel': (dec: ComponentDecoration) => {
+    const p = (dec.props ?? {}) as {
+      x?: number; y?: number; width?: number; height?: number; radius?: number; color?: string;
+    };
+    return (
+      <CnNeGreenPanel
+        x={p.x ?? 137}
+        y={p.y ?? 5}
+        width={p.width ?? 338}
+        height={p.height ?? 130}
+        radius={p.radius ?? 10}
+        color={p.color ?? '#77CD74'}
+      />
+    );
+  },
 };
 
 export interface PlatePreviewProps {

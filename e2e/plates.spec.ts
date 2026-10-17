@@ -23,7 +23,9 @@ async function plateInfo(page: import('@playwright/test').Page) {
     return {
       id: svg.getAttribute('data-plate-svg'),
       viewBox: svg.getAttribute('viewBox'),
-      chars: [...svg.querySelectorAll('text')].map((t) => t.textContent).join(''),
+      chars: [...svg.querySelectorAll('text, [data-char]')]
+        .map((t) => t.getAttribute('data-char') ?? t.textContent)
+        .join(''),
     };
   });
 }
@@ -46,6 +48,17 @@ test.describe('首屏与默认状态', () => {
     for (const name of ['中国', '欧盟', '美国', '日本']) {
       await expect(page.getByRole('tab', { name })).toBeVisible();
     }
+  });
+
+  test('顶部栏 GitHub 入口指向本项目仓库', async ({ page }) => {
+    await page.goto('/');
+    const link = page.getByRole('link', { name: '在 GitHub 上查看本项目' });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute(
+      'href',
+      'https://github.com/wpy030414/car-sign-generator',
+    );
+    await expect(link).toHaveAttribute('target', '_blank');
   });
 
   test('显示物理尺寸与合法徽章', async ({ page }) => {
@@ -161,7 +174,7 @@ test.describe('类型切换', () => {
   test('欧盟切换法国式', async ({ page }) => {
     await page.goto('/?region=EU&type=eu-de');
     await page.locator('[role=combobox]').first().click();
-    await page.getByRole('option', { name: '法国式', exact: true }).click();
+    await page.getByRole('option', { name: '法国', exact: true }).click();
     const info = await plateInfo(page);
     expect(info?.id).toBe('eu-fr');
   });
@@ -244,5 +257,48 @@ test.describe('4K PNG 导出', () => {
     const buf = readFileSync((await download.path())!);
     // 文件应远大于纯色 PNG（含字形细节 → 压缩后仍有可观体积）
     expect(buf.length).toBeGreaterThan(50_000);
+  });
+});
+
+test.describe('GA 36-2018 版式实测回归', () => {
+  /** 取每个字符的 transform 平移 y，用于判断是否分两行。 */
+  async function rows(page: import('@playwright/test').Page) {
+    return page.evaluate(() =>
+      [...document.querySelectorAll('svg[data-plate-svg] text, svg[data-plate-svg] [data-y]')].map((t) => {
+        const y = t.getAttribute('data-y');
+        if (y !== null) return Number(y);
+        const m = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(t.getAttribute('transform') ?? '');
+        return m ? Number(m[2]) : NaN;
+      }),
+    );
+  }
+
+  test('普通摩托车号牌为 220×140 两行版式（图9）', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-moto');
+    const info = await plateInfo(page);
+    expect(info?.viewBox).toBe('0 0 220 140');
+    const ys = await rows(page);
+    // 两行版式：字位纵向跨度远大于单行字形高度（50mm）
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(30);
+  });
+
+  test('轻便摩托车号为 220×140 蓝底白字（表1）', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-moped');
+    const info = await plateInfo(page);
+    expect(info?.viewBox).toBe('0 0 220 140');
+  });
+
+  test('小型新能源汽车号牌为 480×140（图7）', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-ne-small');
+    const info = await plateInfo(page);
+    expect(info?.viewBox).toBe('0 0 480 140');
+  });
+
+  test('大型汽车后号牌为 440×220 两行（图6）', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-large-car-rear');
+    const info = await plateInfo(page);
+    expect(info?.viewBox).toBe('0 0 440 220');
+    const ys = await rows(page);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(40);
   });
 });

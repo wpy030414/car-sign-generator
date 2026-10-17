@@ -66,7 +66,7 @@
 ## 重要技术边界
 
 - **mm 单一真源**：标准数据里不出现 px；导出像素尺寸由 mm × scale 推导。
-- **字符 ink 拟合**：标准给的是字符**物理 ink 尺寸**（如中国数字 45×70mm），字体自然比例与之不符，故用 `glyphTransform` 各向异性（fill）或等比（uniform）缩放 ink box 到精确 mm。这是「严格参照标准」的关键，不能退化为 `letter-spacing` 或自然排版。
+- **字符 ink 拟合**：标准给的是字符**物理 ink 尺寸**（如中国汽车字符 45×90mm、摩托车序号 30×60mm），字体自然比例与之不符，故用 `glyphTransform` 各向异性（fill）或等比（uniform）缩放 ink box 到精确 mm；连字符、中黒等矮字形改以字体 cap 高为纵向基准，避免被拉成实心块。这是「严格参照标准」的关键，不能退化为 `letter-spacing` 或自然排版。
 - **分隔点矢量绘制**：Latin.ttf 无 U+00B7，旧实现用外链 PNG（污染导出画布）。新实现用 `<circle>`。
 - **导出字体必须内联**：canvas 栅格化 SVG（经 `Image`）运行在隔离文档，无法访问页面 `document.fonts`；外链字体会失败或跨域污染画布导致 `toBlob` 抛错。故 base64 内联 + `assertNoExternalRefs` 守卫。
 - **字体子集化**：CJK 字体原文件 7-10MB，子集化到号牌字符集（中国 44 字、日本 233 字）后 ~14-94KB，可 base64 内联进导出 SVG。

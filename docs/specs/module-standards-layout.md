@@ -40,12 +40,12 @@
 
 ## 验收标准
 
-- [x] 中国 15 类、欧盟 5 类、美国 5 类、日本 6 类版式数据齐全，每类带 citation/fields/defaults。
+- [x] 中国 20 类、欧盟 5 类、美国 5 类、日本 6 类版式数据齐全，每类带 citation/fields/defaults。
 - [x] `layoutRun` 步进 = advance + gapAfter；居中时左右留白对称（容差 0.5mm）。
 - [x] `layoutFreeRun` 右对齐时序列右缘贴合对齐框右缘；shrinkToFit 时超框内容压缩到框宽。
-- [x] `glyphTransform` fill 模式使 ink 高精确等于单元格高（数字 0：sy × inkH_ratio = 70mm）。
+- [x] `glyphTransform` fill 模式使 ink 高精确等于单元格高（数字 0：sy × inkH_ratio = 90mm）。
 - [x] 每个 run 引用的 charClass 都存在于 type.charClasses。
-- [x] 单元测试 27 项全过（`layout.test.ts` + `validate.test.ts`）。
+- [x] 单元测试 28 项、端到端测试 27 项全过。
 
 ## 完成定义
 

@@ -50,7 +50,7 @@
 
 - [x] 四国各版式屏幕预览渲染正确（Playwright 截图逐一核对：中国 7 类、欧盟 2 类、美国 2 类、日本 2 类）。
 - [x] 四国 4K 导出均生成有效 PNG，长边恰为 3840px，宽高比等于号牌 mm 比例（中国 3.14、欧盟 4.73、美日 2.0）。
-- [x] 导出图字形与屏幕预览一致（中国 ChePaiZiTi 数字 + Source Han Sans 汉字、欧盟 FE-Schrift、美国 Overpass、日本 Noto Sans JP 均正确嵌入，无豆腐块）。
+- [x] 导出图字形与屏幕预览一致（中国 ChePaiZiTi 数字 + Source Han Sans 汉字、欧盟 FE-Schrift、美国 Roadgeek、日本 Noto Sans JP 均正确嵌入，无豆腐块）。
 - [x] 导出无画布污染错误（`toBlob` 成功返回）。
 - [x] UI 中点击「下载 PNG」实际触发浏览器下载（Playwright download 事件验证，文件名 `cn-small-car-3840px.png`）。
 - [x] 分辨率可选 2K/4K/8K；安装孔可开关（关闭后导出干净图样）。

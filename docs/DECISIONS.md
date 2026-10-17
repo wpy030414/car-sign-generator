@@ -22,9 +22,11 @@
 
 ## ADR-002：字符按固定 mm 单元格 + ink 拟合摆放，而非字体自然排版
 
+> 补充（2026-10）：中国版式数据已按 GA 36-2018 第 5 章各「式样」图的毫米标注重测（图1 汽车 45×90、图6 后牌 80×60/65×110、图7/8 新能源 45/43×90、图9 摩托车 50×50/30×60），详见 `src/lib/standards/cn.ts` 头部。矮字形按 cap 高缩放。
+
 - **日期**：2026-10
 - **状态**：已采纳
-- **背景**：各国标准规定的是字符的**物理 ink 尺寸**（如中国 GA 36-2018 表3：数字 45×70mm、笔画 10mm；欧盟 FE-Schrift：数字 44.5×75mm）。字体的自然 advance/ink 比例与标准不符（中国 ChePaiZiTi 数字 ink 比例 0.565，标准 45/70=0.643；美国 Overpass 数字 ink 比例 0.72，标准压缩模具 ≈0.41）。若用自然排版或 `letter-spacing`，字符比例会失真。
+- **背景**：各国标准规定的是字符的**物理 ink 尺寸**（如中国 GA 36-2018 图1：汽车字符 45×90mm；图9：摩托车下行 30×60mm；欧盟 FE-Schrift：数字 44.5×75mm）。字体的自然 advance/ink 比例与标准不符（中国 ChePaiZiTi 数字 ink 比例 0.565，标准 45/90=0.5；美国 FHWA 字形 ink 比例约 0.81，标准压缩模具 ≈0.41）。若用自然排版或 `letter-spacing`，字符比例会失真。
 - **考虑过的方案**：
   1. 用 `font-size` + `letter-spacing` 自然排版，近似标准。
   2. 每字符用 CSS/SVG `transform: scale()` 拉伸到标准尺寸（旧版做法，但基于估算比例）。
@@ -38,6 +40,8 @@
   - 方案 1：自然排版无法让 ink 精确等于标准 mm，比例失真（旧版根本问题）。
   - 方案 2：基于估算比例的 scale 不精确，且旧版用 CSS 难以维护。
 - **后果**：需要构建期字体度量管线（fontTools）；度量文件是生成物。新增字体需在 `METRICS_BY_FAMILY` 注册。
+
+> 补充（2026-10）：替代字体被横向压缩后竖画会变细（如思源黑体压到 45/90 时竖画约减半）。`CharClass.hBold` 以「同一字形多次水平偏移绘制」只加粗竖画、保持横画不变，把笔画对比还原到标准值；矮字形（连字符等）另以 cap 高为纵向基准缩放。
 - **何时重新审视**：若标准给出的是「字体 em 尺寸」而非「ink 尺寸」，或字体本身已按标准设计（则 uniform 足够），可简化。
 
 ## ADR-003：数据驱动的标准模型，各国差异尽量表达为数据
@@ -102,10 +106,10 @@
   2. 用开源近似字体替代，并在 README/代码注明差异。
 - **决策**：选方案 2。
   - 欧盟：GL-Nummernschild-Mtl（FE-Schrift 克隆，Gutenberg Labo 自由软件许可）。
-  - 美国：Overpass Bold（Red Hat 对 Highway Gothic 的 OFL 重绘）。
+  - 美国：Roadgeek 2014 Series EM（MIT），按 FHWA 公开字形数据复刻。
   - 日本：Noto Sans JP Bold（OFL）。
   - 中国：ChePaiZiTi（仓库自带的车牌字体）+ Source Han Sans CN（OFL）。
-- **为什么选这个**：合法可分发内嵌；Overpass 是 Highway Gothic 的正规开源重绘，GL-Nummernschild 是 FE-Schrift 的精确克隆（ink 比例与标准一致，见 ADR-002），保真度高。
+- **为什么选这个**：合法可分发内嵌；Roadgeek 直接按 FHWA 公有领域字形数据复刻（非近似重绘），GL-Nummernschild 是 FE-Schrift 的精确克隆（ink 比例与标准一致，见 ADR-002），保真度高。
 - **为什么不选其他**：方案 1 有明确法律风险，违背开源项目定位。
 - **后果**：字形与真牌存在细微差异（尤其日本 TRM 数字的 2:1 压缩比例、小松書体假名）。README 已注明。`fill` 拟合模式可把替代字体压到标准 ink 尺寸，缓解比例差异。
 - **何时重新审视**：若获得官方字体授权，或出现更精确的开源克隆，可替换。
@@ -123,3 +127,22 @@
 - **为什么不选其他**：方案 1 重渲染范围大、性能差；引入 Redux 过重。
 - **后果**：需手写 ~30 行 URL 同步中间件（或可用 nuqs）。store 是领域状态的单一真源，`Standard` 数据是模块级静态注册表（不可变，非状态）。
 - **何时重新审视**：若状态逻辑复杂化（撤销/重做、多号牌对比），评估 zustand middleware 或迁移到更强状态库。
+
+## ADR-008：GitHub Pages 子路径部署
+
+- **日期**：2026-10
+- **状态**：已采纳
+- **背景**：项目需要公开可访问的线上演示，且不引入后端或额外托管成本。
+- **考虑过的方案**：
+  1. GitHub Pages 项目站点（`/<repo>/` 子路径）。
+  2. GitHub Pages 用户/组织站点（根路径，需独立仓库）。
+  3. Vercel/Netlify 等外部托管。
+- **决策**：选方案 1。`.github/workflows/deploy-pages.yml` 在 `main` 推送或手动触发时执行 `pnpm build`，经 `upload-pages-artifact` + `deploy-pages` 发布。
+- **为什么选这个**：零成本、与仓库同源、无需额外账号；项目无后端与路由，静态托管即可。
+- **为什么不选其他**：方案 2 需额外仓库并与源码分离；方案 3 引入外部平台依赖。
+- **后果**：
+  - 站点位于 `/car-sign-generator/`，Vite `base` 由工作流注入 `BASE_PATH` 控制；`public/` 字体与 favicon 路径均通过 `import.meta.env.BASE_URL` 或 Vite 的 index.html 重写适配子路径。
+  - 本地开发与 Playwright 保持 `base = '/'`，避免测试路径变化。
+  - 仓库名一旦更改，必须同步修改 `BASE_PATH` 与 README 中的线上地址。
+  - 首次启用需在仓库 Settings → Pages 将 Source 设为 GitHub Actions。
+- **何时重新审视**：若引入客户端路由（需要 404 fallback）或改用自定义域名，则调整部署方案。

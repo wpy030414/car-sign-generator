@@ -23,7 +23,7 @@
 - **全局规则 / 约定**：
   - **mm 是唯一长度单位**：所有物理量（尺寸、字符宽高、间距、边距）以 mm 表达，SVG `viewBox` 直接以 mm 为 user unit。不要引入 px 常量到标准数据里。
   - **新增一种版式 = 加一条 `PlateType` 数据**；新增一个国家 = 加一个 `standards/<region>.ts` + 在 `standards/index.ts` 注册（+ 若有特殊几何装饰，加一个组件并注册到 `PlatePreview` 的 `DECORATIONS`）。优先用数据表达，避免新增渲染代码。
-  - **字符按固定 mm 单元格摆放**，不依赖字体自然 advance。两种拟合模式：`uniform`（等比，用于 FE-Schrift 等本就按标准设计的字体）、`fill`（各向异性拉伸，用于 Overpass/Noto 等替代字体）。见 `layout.ts` 的 `glyphTransform`。
+  - **字符按固定 mm 单元格摆放**，不依赖字体自然 advance。两种拟合模式：`uniform`（等比，用于 FE-Schrift 等本就按标准设计的字体）、`fill`（各向异性拉伸，用于 Noto 等替代字体）。见 `layout.ts` 的 `glyphTransform`。
   - **字体 ink 度量在构建期生成**（`src/lib/plate/fontMetrics.ts`），不要改成运行时 canvas 测量——保持布局引擎纯函数、可单测。
   - **分隔点「·」用矢量 `<circle>` 绘制**，不用字体字形（Latin.ttf 无 U+00B7），不用外链图片（会污染导出画布）。
   - **导出前必须内联字体 base64**（canvas 栅格化 SVG 时无法访问 document.fonts）。见 `export.ts`，改动导出路径时保持 `assertNoExternalRefs` 守卫。

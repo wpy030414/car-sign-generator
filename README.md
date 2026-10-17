@@ -19,7 +19,6 @@
   ```bash
   pnpm install
   ```
-  > 项目已配置 `.npmrc` 使用 npmmirror 中国镜像。
 - **运行 / 启动**：
   ```bash
   pnpm dev        # 开发服务器（默认 http://localhost:5173）
@@ -29,14 +28,22 @@
   pnpm lint       # oxlint
   ```
 
+## 部署
+
+- **线上地址**：<https://wpy030414.github.io/car-sign-generator/>
+- **方式**：GitHub Actions（`.github/workflows/deploy-pages.yml`）在推送到 `main` 或手动触发时构建并发布到 GitHub Pages 项目站点。
+- **子路径**：站点部署在 `/car-sign-generator/` 下，工作流通过 `BASE_PATH` 注入 Vite `base`；本地开发/预览仍以 `/` 为根，不影响 Playwright。
+- **首次启用**：仓库 Settings → Pages → Source 选择 **GitHub Actions**，之后推送即可自动发布。
+
 ## 当前状态
 
 - **阶段**：稳定（四国号牌渲染 + 编辑器 + 4K 导出均已实现并通过验证）。
 - **已知限制**：
-  - 各国官方号牌字体（FE-Schrift、Highway Gothic、日本 TRM/小松書体）多受版权保护，本项目以开源字体替代（见下），字形与真牌存在细微差异。
+  - 字体：美国已使用按 FHWA 公有领域字形数据复刻的 Roadgeek 2014 Series EM；欧盟使用 FE-Schrift 系列的 GL-Nummernschild（该字型无官方数字版）；中国汉字与日本仍以 Source Han Sans / Noto Sans JP 替代——中美日三国的官方号牌字形均未公开授权（见下）。
   - 日本号牌颜色非法定（法令只规定「营业用绿底白字、自用白底绿字，其余由大臣定」），采用业界实测标准值。
   - 中国新能源号牌为渐变底，渐变节点为近似还原（标准以 Pantone 色号 + 图形附录表述，无精确 hex）。
-  - 仅支持单行车牌的主流版式；部分国家特殊版式（如美国各州图案底、日本小板彩边摩托）未覆盖。
+  - 中国号牌已按 GA 36-2018 各「式样」图逐项实测（单行/双行版式、字符单元格、间隔、分隔点区）。
+  - 新能源号牌：大型为「黄底 + 内嵌绿色圆角矩形」，小型为白→绿渐变；分隔处嵌入官方矢量专用标识（Wikimedia Commons「新能源汽车号牌专用标志」，`src/assets/ne-symbol.svg`，以 data URI 内联）。纸质临时号牌的防伪底纹未覆盖。
 
 ## 核心技术
 
@@ -45,14 +52,18 @@
 - **状态**：Zustand（+ URL query 持久化，任意号牌可分享链接）。
 - **渲染**：SVG（1 user unit = 1mm，矢量精度）；布局引擎为纯函数，构建期字体 ink 度量，确定性可单测。
 - **导出**：SVG 序列化 → 字体 base64 内联 → `Image` → `Canvas`（4K）→ PNG `toBlob` 下载。
-- **字体（全部 OFL/Apache，可合法内嵌）**：
-  | 用途 | 字体 | 许可 |
+- **字体**：
+  | 用途 | 字体 | 说明 |
   |------|------|------|
-  | 中国 数字/字母 | ChePaiZiTi（车牌字体，仓库自带） | 随仓库 |
-  | 中国 汉字 | Source Han Sans CN（子集） | SIL OFL |
-  | 欧盟 | GL-Nummernschild-Mtl（FE-Schrift 克隆，子集） | 自由软件（Gutenberg Labo） |
-  | 美国 | Overpass Bold（Highway Gothic 开源重绘，子集） | SIL OFL |
-  | 日本 | Noto Sans JP Bold（子集） | SIL OFL |
+  | 中国 数字/字母/汉字 | **ChinaVehicleLicensePlateFont**（`CN.ttf`） | 训练员提供的号牌专用字体，等宽字距、字宽约 0.5 |
+  | 欧盟 | GL-Nummernschild（FE-Schrift 复刻） | 该字型无官方数字版（Gutenberg Labo，自由使用） |
+  | 美国 | Roadgeek 2014 Series EM | FHWA Series E Modified 字形数据复刻（MIT） |
+  | 日本 | Noto Sans JP Bold（子集） | 替代 TRM/小松書体（SIL OFL） |
+
+  > 中国号牌使用训练员提供的 `CN.ttf`。拟合方式按版式区分：
+  > - **单行版式**（440×140 / 480×140）：`uniform` 等比——字形自然比例映射到单元格，`1` 等窄字保持原宽。
+  > - **两行版式**（大型汽车后号牌/挂车 440×220、摩托车 220×140、低速车 300×165）：第一行是「扁字」，按单元格 `fill` 拉伸（图6 上行 80×60、图9 上行 50×50、图19 上行 45×45）。
+  > 日本（TRM/小松書体）官方字形未公开授权；欧盟 FE-Schrift 亦从未发布官方数字字体。
 
 ## 免责声明
 

@@ -12,18 +12,26 @@ import type { FontRef } from '@/types/standard';
 // BASE_URL 兼容部署在子路径的情况。
 const base = import.meta.env.BASE_URL;
 const f = (p: string) => `${base}${p}`;
-const latinUrl = f('fonts/Latin.ttf');
-const hanUrl = f('fonts/SourceHanSansCN.woff2');
+const cnUrl = f('fonts/CN.ttf');
+const punctUrl = f('fonts/Latin.ttf');
+
 const feUrl = f('fonts/FE-Mittelschrift.ttf');
-const overpassUrl = f('fonts/Overpass-Bold.woff2');
+const roadgeekUrl = f('fonts/Roadgeek-2014-EM.ttf');
 const notoUrl = f('fonts/NotoSansJP-Bold-subset.woff2');
+const fzUrl = f('fonts/FZ-NumberPlate.otf');
 
 export const FONTS = {
-  latin: { family: 'ChePaiZiTi', src: latinUrl, format: 'truetype' } satisfies FontRef,
-  han: { family: 'Source Han Sans CN VF', src: hanUrl, format: 'woff2' } satisfies FontRef,
+  // 中国号牌专用字体（训练员提供）：等宽字距、字宽约 0.5，数字/字母/汉字同一套
+  cn: { family: 'ChinaVehicleLicensePlateFont', src: cnUrl, format: 'truetype' } satisfies FontRef,
+  latin: { family: 'ChinaVehicleLicensePlateFont', src: cnUrl, format: 'truetype' } satisfies FontRef,
+  han: { family: 'ChinaVehicleLicensePlateFont', src: cnUrl, format: 'truetype' } satisfies FontRef,
+  // 标点专用（连字符/句点/空格）：新号牌字体不含这些字形
+  punct: { family: 'ChePaiZiTi-Punct', src: punctUrl, format: 'truetype' } satisfies FontRef,
   fe: { family: 'GL-Nummernschild-Mtl', src: feUrl, format: 'truetype' } satisfies FontRef,
-  overpass: { family: 'Overpass', weight: 700, src: overpassUrl, format: 'woff2' } satisfies FontRef,
+  roadgeek: { family: 'Roadgeek 2014 Series EM', src: roadgeekUrl, format: 'truetype' } satisfies FontRef,
   noto: { family: 'Noto Sans JP', weight: 700, src: notoUrl, format: 'woff2' } satisfies FontRef,
+  // 日本号牌字形（FZ ナンバープレートゴシック）：数字/字母/部分假名
+  fzJP: { family: 'FZ-Carnumber', src: fzUrl, format: 'opentype' } satisfies FontRef,
 } as const;
 
 const FORMAT_CSS: Record<string, string> = {

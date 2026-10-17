@@ -8,7 +8,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { glyphTransform, layoutFreeRun, layoutRun, pitchOf } from '@/lib/plate/layout';
+import { glyphOf, glyphTransform, layoutFreeRun, layoutRun, pitchOf } from '@/lib/plate/layout';
+import { FONTS } from '@/lib/plate/fonts';
 import { cnStandard } from '@/lib/standards/cn';
 import { FONT_METRICS } from '@/lib/plate/fontMetrics';
 import { usStandard } from '@/lib/standards/us';
@@ -144,6 +145,26 @@ describe('glyphTransform（ink 精确拟合）', () => {
     const { transform } = glyphTransform(' ', cls, cell);
     expect(transform).not.toMatch(/scale\(/);
     expect(transform).toMatch(/translate\(10 /);
+  });
+});
+
+describe('字体回退链', () => {
+  const neSmall = getPlateType('cn-ne-small');
+
+  it('专用字体覆盖的字形用自己的度量，缺失字形回退 CNPlate', () => {
+    // CN-E-Latin 的 `1` 带衬线，ink 比光杆竖线宽
+    expect(glyphOf(FONTS.cnELatin, '1').x0).toBeCloseTo(0.155, 5);
+    expect(glyphOf(FONTS.cnELatin, '1').x1).toBeCloseTo(0.379, 5);
+    // `0` 不在 CN-E-Latin 中 → 回退 CN 号牌字体的度量
+    expect(glyphOf(FONTS.cnELatin, '0')).toEqual(FONT_METRICS.CNPlate.glyphs['0']);
+  });
+
+  it('新能源版式的 letters/digits 用专用字体，汉字仍用号牌汉字字体', () => {
+    expect(neSmall.charClasses.serial.font.family).toBe('CN-E-Latin');
+    expect(neSmall.charClasses.letterWide.font.family).toBe('CN-E-Latin');
+    expect(neSmall.charClasses.hanzi.font.family).toBe('ChinaVehicleLicensePlateFont');
+    // 普通号牌不受影响
+    expect(smallCar.charClasses.serial.font.family).toBe('ChinaVehicleLicensePlateFont');
   });
 });
 

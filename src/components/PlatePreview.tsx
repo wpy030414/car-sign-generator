@@ -30,7 +30,7 @@ const DECORATIONS: Record<string, DecorationRenderer> = {
   ),
   'cn-ne-emblem': (dec: ComponentDecoration) => {
     const p = (dec.props ?? {}) as { cx?: number; cy?: number; r?: number };
-    return <CnNeEmblem cx={p.cx ?? 137} cy={p.cy ?? 70} r={p.r ?? 16} />;
+    return <CnNeEmblem cx={p.cx ?? 137} cy={p.cy ?? 70} r={p.r ?? 14} />;
   },
   'cn-ne-panel': (dec: ComponentDecoration) => {
     const p = (dec.props ?? {}) as {
@@ -39,9 +39,9 @@ const DECORATIONS: Record<string, DecorationRenderer> = {
     return (
       <CnNeGreenPanel
         x={p.x ?? 137}
-        y={p.y ?? 5}
+        y={p.y ?? 8}
         width={p.width ?? 338}
-        height={p.height ?? 130}
+        height={p.height ?? 124}
         radius={p.radius ?? 10}
         color={p.color ?? '#77CD74'}
       />

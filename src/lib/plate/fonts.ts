@@ -20,11 +20,32 @@ const roadgeekUrl = f('fonts/Roadgeek-2014-EM.ttf');
 const notoUrl = f('fonts/NotoSansJP-Bold-subset.woff2');
 const fzUrl = f('fonts/FZ-NumberPlate.otf');
 
+/** 中国号牌专用字体（训练员提供）：等宽字距、字宽约 0.5，数字/字母/汉字同一套。 */
+const cnPlate: FontRef = {
+  family: 'ChinaVehicleLicensePlateFont',
+  src: cnUrl,
+  format: 'truetype',
+};
+
+/**
+ * 新能源号牌专用拉丁字形（GA 36-2018 新能源字体，训练员提供）。
+ *
+ * 该字体只覆盖部分数字/字母（1–9、A–H/L/M/N 等），`1` 为带衬线的防伪字形。
+ * 缺失字形（0、I/O 以外的部分字母）按 CSS font-family 栈回退到 `cnPlate`，
+ * 布局度量也沿 `FontRef.fallback` 取同一字体的 ink，保证字形与拟合一致。
+ */
+const cnELatin: FontRef = {
+  family: 'CN-E-Latin',
+  src: f('fonts/CN-E-Latin.otf'),
+  format: 'opentype',
+  fallback: cnPlate,
+};
+
 export const FONTS = {
-  // 中国号牌专用字体（训练员提供）：等宽字距、字宽约 0.5，数字/字母/汉字同一套
-  cn: { family: 'ChinaVehicleLicensePlateFont', src: cnUrl, format: 'truetype' } satisfies FontRef,
-  latin: { family: 'ChinaVehicleLicensePlateFont', src: cnUrl, format: 'truetype' } satisfies FontRef,
-  han: { family: 'ChinaVehicleLicensePlateFont', src: cnUrl, format: 'truetype' } satisfies FontRef,
+  cn: cnPlate,
+  latin: cnPlate,
+  han: cnPlate,
+  cnELatin,
   // 标点专用（连字符/句点/空格）：新号牌字体不含这些字形
   punct: { family: 'ChePaiZiTi-Punct', src: punctUrl, format: 'truetype' } satisfies FontRef,
   fe: { family: 'GL-Nummernschild-Mtl', src: feUrl, format: 'truetype' } satisfies FontRef,
@@ -47,6 +68,18 @@ const dataUrlCache = new Map<string, string>();
 /** family → FontRef 缓存。 */
 const fontRefCache = new Map<string, FontRef>();
 
+/** 展开 `FontRef.fallback` 链并去重（family 级）。 */
+export function expandFonts(fonts: FontRef[]): FontRef[] {
+  const out = new Map<string, FontRef>();
+  const walk = (font: FontRef) => {
+    if (out.has(font.family)) return;
+    out.set(font.family, font);
+    if (font.fallback) walk(font.fallback);
+  };
+  for (const font of fonts) walk(font);
+  return [...out.values()];
+}
+
 function cssFor(font: FontRef, srcOverride?: string): string {
   const weight = font.weight ? `font-weight:${font.weight};` : '';
   const fmt = font.format ? ` format('${FORMAT_CSS[font.format] ?? font.format}')` : '';
@@ -56,7 +89,8 @@ function cssFor(font: FontRef, srcOverride?: string): string {
 /**
  * 确保字体已在页面加载（屏幕渲染用）。幂等。
  */
-export async function ensureFontsLoaded(fonts: FontRef[]): Promise<void> {
+export async function ensureFontsLoaded(input: FontRef[]): Promise<void> {
+  const fonts = expandFonts(input);
   for (const font of fonts) {
     fontRefCache.set(font.family, font);
     if (!injected.has(font.family)) {
@@ -72,7 +106,10 @@ export async function ensureFontsLoaded(fonts: FontRef[]): Promise<void> {
   await Promise.all(
     fonts.map((f) => {
       const weight = f.weight ? String(f.weight) : 'normal';
-      return document.fonts.load(`${weight} 100px "${f.family}"`).catch(() => undefined);
+      // 传样本文本：只覆盖部分字符的字体（CN-E-Latin）若用默认空格可能根本不加载
+      return document.fonts
+        .load(`${weight} 100px "${f.family}"`, '0123456789ABC 京')
+        .catch(() => undefined);
     }),
   );
   await document.fonts.ready;
@@ -101,16 +138,14 @@ async function toDataUrl(font: FontRef): Promise<string> {
  * 生成导出用 @font-face CSS：所有字体以 base64 data URI 内联。
  * canvas 栅格化 SVG 的唯一可靠字体来源。
  */
-export async function buildExportFontCss(fonts: FontRef[]): Promise<string> {
-  const unique = new Map<string, FontRef>();
-  for (const f of fonts) unique.set(f.family, f);
+export async function buildExportFontCss(input: FontRef[]): Promise<string> {
   const parts = await Promise.all(
-    [...unique.values()].map(async (f) => cssFor(f, await toDataUrl(f))),
+    expandFonts(input).map(async (f) => cssFor(f, await toDataUrl(f))),
   );
   return parts.join('\n');
 }
 
 /** 预热所有字体的 base64 缓存（可在应用启动后空闲时调用，加速首次导出）。 */
-export async function warmFontCache(fonts: FontRef[]): Promise<void> {
-  await Promise.all(fonts.map((f) => toDataUrl(f).catch(() => undefined)));
+export async function warmFontCache(input: FontRef[]): Promise<void> {
+  await Promise.all(expandFonts(input).map((f) => toDataUrl(f).catch(() => undefined)));
 }

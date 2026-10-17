@@ -19,12 +19,21 @@ import { glyphTransform, layoutAny, r } from '@/lib/plate/layout';
 import type {
   ComponentDecoration,
   Fill,
+  FontRef,
   PlateType,
   RectDecoration,
   ScrewDecoration,
 } from '@/types/standard';
 
 export const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** CSS font-family 栈：沿 FontRef.fallback 链，与布局度量的回退顺序一致。 */
+function fontStack(font: FontRef): string {
+  const families: string[] = [];
+  for (let f: FontRef | undefined = font; f; f = f.fallback) families.push(`'${f.family}'`);
+  families.push('sans-serif');
+  return families.join(', ');
+}
 
 /** 组件装饰渲染器注册表：name → 渲染函数。 */
 export type DecorationRenderer = (
@@ -232,7 +241,7 @@ export function PlateSvg({
 
       {/*
         边框（内缩描边）；width=0 表示无。
-        inset > 0 时边框外侧留一圈板体底色（如 GA 36：牌边 → 3mm 底色 → 1.5mm 白边）。
+        inset > 0 时边框外侧留一圈板体底色（如 GA 36：牌边 → 3mm 底色 → 2mm 白边）。
         整块冲压成型的号牌（GA 36）边框也参与浮雕。
       */}
       {type.border.width > 0 && (
@@ -299,7 +308,7 @@ export function PlateSvg({
                     id={tid}
                     transform={transform}
                     fontSize={fontSize}
-                    fontFamily={`'${g.cls.font.family}', sans-serif`}
+                    fontFamily={fontStack(g.cls.font)}
                     fontWeight={weight}
                     fill={fill}
                     stroke={g.cls.outline ? fill : undefined}

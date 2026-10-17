@@ -275,14 +275,56 @@ test.describe('新能源号牌背景', () => {
     expect(stops[3].offset).toBeCloseTo(100, 3);
   });
 
-  test('新能源专用标识直径 32mm（半径 16mm）', async ({ page }) => {
+  test('字母/数字使用新能源专用字体（1 带衬线），普通号牌不受影响', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-ne-small');
+    await page.getByLabel('序号').fill('D10234');
+
+    const glyphs = await page.locator('svg[data-plate-svg] text').evaluateAll((els) =>
+      els.map((el) => ({ ch: el.textContent, ff: el.getAttribute('font-family') ?? '' })),
+    );
+    expect(glyphs.map((g) => g.ch).join('')).toBe('京AD10234');
+    // 省简称：仍是号牌汉字字体
+    expect(glyphs[0].ff).toContain("'ChinaVehicleLicensePlateFont'");
+    expect(glyphs[0].ff).not.toContain('CN-E-Latin');
+    // 代号 + 序号：全部走新能源专用字体
+    for (const g of glyphs.slice(1)) expect(g.ff).toContain("'CN-E-Latin'");
+    // `1` 的衬线来自字体本身，不是渲染层补丁
+    expect(glyphs.find((g) => g.ch === '1')?.ff).toContain("'CN-E-Latin'");
+
+    // 专用字体确实已加载
+    const loaded = await page.evaluate(async () => {
+      await document.fonts.ready;
+      return document.fonts.check('100px "CN-E-Latin"', '1');
+    });
+    expect(loaded).toBe(true);
+
+    // 普通号牌保持原字体
+    await page.goto('/?region=CN&type=cn-small-car');
+    const normal = await page.locator('svg[data-plate-svg] text').first().getAttribute('font-family');
+    expect(normal).toContain("'ChinaVehicleLicensePlateFont'");
+    expect(normal).not.toContain('CN-E-Latin');
+  });
+
+  test('大型新能源绿色矩形上下各留 8mm，不顶黑色边框', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-ne-large');
+    const panel = await page.locator('svg[data-plate-svg] rect[fill="#25E148"]').evaluate((r) => ({
+      y: Number(r.getAttribute('y')),
+      h: Number(r.getAttribute('height')),
+    }));
+    expect(panel.y).toBeCloseTo(8, 2);
+    expect(panel.h).toBeCloseTo(124, 2);
+    // 边框内缘 = inset 3 + 线宽 2 = 5mm，面板与边框之间仍留出 3mm
+    expect(panel.y - 5).toBeGreaterThanOrEqual(3);
+  });
+
+  test('新能源专用标识直径 28mm（半径 14mm）', async ({ page }) => {
     await page.goto('/?region=CN&type=cn-ne-small');
     const size = await page.evaluate(() => {
       const img = document.querySelector('svg[data-plate-svg] image')!;
       return { w: Number(img.getAttribute('width')), h: Number(img.getAttribute('height')) };
     });
-    expect(size.w).toBeCloseTo(32, 1);
-    expect(size.h).toBeCloseTo(32, 1);
+    expect(size.w).toBeCloseTo(28, 1);
+    expect(size.h).toBeCloseTo(28, 1);
   });
 });
 
@@ -375,14 +417,14 @@ test.describe('导出设置', () => {
         stroke: Number(r.getAttribute('stroke-width')),
         rx: Number(r.getAttribute('rx')),
       }));
-    // 牌边 → 3mm 底色 → 1.5mm 白边：rect 中心线内缩 3 + 0.75，宽高减去两侧 3.75
-    expect(rect.x).toBeCloseTo(3.75, 2);
-    expect(rect.y).toBeCloseTo(3.75, 2);
-    expect(rect.w).toBeCloseTo(440 - 7.5, 2);
-    expect(rect.h).toBeCloseTo(140 - 7.5, 2);
-    expect(rect.stroke).toBe(1.5);
-    // 圆角同样内缩：R10 - 3.75
-    expect(rect.rx).toBeCloseTo(6.25, 2);
+    // 牌边 → 3mm 底色 → 2mm 白边：rect 中心线内缩 3 + 1，宽高减去两侧 4
+    expect(rect.x).toBeCloseTo(4, 2);
+    expect(rect.y).toBeCloseTo(4, 2);
+    expect(rect.w).toBeCloseTo(440 - 8, 2);
+    expect(rect.h).toBeCloseTo(140 - 8, 2);
+    expect(rect.stroke).toBe(2);
+    // 圆角同样内缩：R10 - 4
+    expect(rect.rx).toBeCloseTo(6, 2);
   });
 
   test('印刷边框不参与浮雕（仅整板冲压的 GA 36 边框冲压）', async ({ page }) => {
@@ -418,6 +460,20 @@ test.describe('4K PNG 导出', () => {
     expect(w).toBe(3840);
     // 440:140 → h = round(3840 * 140/440) = 1222
     expect(h).toBe(1222);
+  });
+
+  test('新能源号牌导出（专用字体 base64 内联）比例正确', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-ne-small');
+    await page.getByLabel('序号').fill('D10234');
+    await page.evaluate(() => document.fonts.ready);
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: /下载 PNG/ }).click(),
+    ]);
+    const buf = readFileSync((await download.path())!);
+    const { w, h } = pngSize(buf);
+    expect(w).toBe(3840);
+    expect(h).toBe(1120); // round(3840 * 140/480)
   });
 
   test('欧盟号牌导出比例正确（520×110）', async ({ page }) => {

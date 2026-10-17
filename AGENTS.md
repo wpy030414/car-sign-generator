@@ -47,6 +47,5 @@
 - `src/components/{Editor,PlateStage,PlatePreview,ExportBar}.tsx` — 应用 UI
 - `src/store/plateStore.ts` — Zustand 状态 + URL 持久化
 - `src/components/ui/` — shadcn/ui 组件（生成物，勿手改）
-- `public/fonts/` — 子集化字体文件（共 ~156KB）
-- `document/` — GA 36-2018 标准 PDF（数据来源）
+- `public/fonts/` — 号牌字体（CN.ttf、新能源 CN-E-Latin.otf、FE/Roadgeek/FZ/Noto 等）
 - `docs/` — PRD / ARCHITECTURE / DECISIONS / specs

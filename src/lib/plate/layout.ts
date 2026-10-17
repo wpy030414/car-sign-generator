@@ -35,6 +35,7 @@ import type {
 /** FontRef.family → FONT_METRICS 键的映射。 */
 const METRICS_BY_FAMILY: Record<string, keyof typeof FONT_METRICS> = {
   'ChinaVehicleLicensePlateFont': 'CNPlate',
+  'CN-E-Latin': 'CNELatin',
   'ChePaiZiTi-Punct': 'Latin',
   'GL-Nummernschild-Mtl': 'FE',
   'Roadgeek 2014 Series EM': 'Roadgeek',
@@ -60,20 +61,30 @@ export function metricsFor(font: FontRef): FontMetricsEntry {
  * 这类字形在 `fill` 模式下会被纵向拉伸成一整块实心矩形（美国/日本号牌曾如此）。
  */
 export function capOf(font: FontRef): { top: number; height: number } {
-  const m = metricsFor(font);
+  // 走 glyphOf 以便 `FontRef.fallback` 链生效（如 CN-E-Latin 没有 `0`）
   for (const ch of ['H', 'E', '0']) {
-    const g = m.glyphs[ch];
-    if (g?.y0 !== undefined && g?.y1 !== undefined) {
+    const g = glyphOf(font, ch);
+    if (g.y0 !== undefined && g.y1 !== undefined) {
       return { top: g.y1, height: g.y1 - g.y0 };
     }
   }
   return { top: 0.72, height: 0.72 };
 }
 
-/** 取某字符的 ink 度量；缺字形时退化为 advance-only（无 ink）。 */
+/**
+ * 取某字符的 ink 度量。
+ *
+ * 沿 `FontRef.fallback` 链查找：专用字体只覆盖部分字符时（CN-E-Latin），
+ * 缺失字形必须用回退字体的度量，否则会按 0.5 em 的假 advance 摆放。
+ * 全链都没有该字形时退化为 advance-only（无 ink）。
+ */
 export function glyphOf(font: FontRef, char: string): GlyphMetrics {
+  for (let f: FontRef | undefined = font; f; f = f.fallback) {
+    const g = metricsFor(f).glyphs[char];
+    if (g) return g;
+  }
   const m = metricsFor(font);
-  return m.glyphs[char] ?? { adv: m.glyphs[' ']?.adv ?? 0.5 };
+  return { adv: m.glyphs[' ']?.adv ?? 0.5 };
 }
 
 /**

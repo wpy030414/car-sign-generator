@@ -8,7 +8,7 @@ import { cnStandard } from './cn';
 import { euStandard } from './eu';
 import { jpStandard } from './jp';
 import { usStandard } from './us';
-import type { PlateType, Region, Standard } from '@/types/standard';
+import type { FontRef, PlateType, Region, Standard } from '@/types/standard';
 
 export const STANDARDS: Standard[] = [cnStandard, euStandard, usStandard, jpStandard];
 
@@ -45,9 +45,19 @@ export function getPlateType(typeId: string): PlateType {
   return t;
 }
 
-/** 收集一个 PlateType 用到的所有字体（导出内联用）。 */
-export function fontsOfType(type: PlateType) {
-  const seen = new Map<string, (typeof type.charClasses)[string]['font']>();
-  for (const cls of Object.values(type.charClasses)) seen.set(cls.font.family, cls.font);
+/**
+ * 收集一个 PlateType 用到的所有字体（屏幕加载 + 导出内联用）。
+ *
+ * 沿 `FontRef.fallback` 展开：新能源号牌的 CN-E-Latin 只覆盖部分字符，
+ * 回退的 CN 号牌字体也必须一起加载/内联，否则缺字形处会落到系统字体。
+ */
+export function fontsOfType(type: PlateType): FontRef[] {
+  const seen = new Map<string, FontRef>();
+  const walk = (font: FontRef) => {
+    if (seen.has(font.family)) return;
+    seen.set(font.family, font);
+    if (font.fallback) walk(font.fallback);
+  };
+  for (const cls of Object.values(type.charClasses)) walk(cls.font);
   return [...seen.values()];
 }

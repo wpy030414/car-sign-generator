@@ -39,6 +39,14 @@ export interface FontRef {
   src: string;
   /** woff2 | ttf | otf，用于 @font-face format() 提示 */
   format?: 'woff2' | 'truetype' | 'opentype';
+  /**
+   * 缺字形时回退的字体。
+   *
+   * 用于专用字体只覆盖部分字符的情况（如新能源号牌的 `CN-E-Latin.otf` 只有
+   * 1–9 与部分字母）：渲染时按 CSS font-family 栈逐字回退，布局度量也沿同一条
+   * 链取字形 ink，保证「字体里有的字用专用字形，没有的字用回退字体」而不失真。
+   */
+  fallback?: FontRef;
 }
 
 /**

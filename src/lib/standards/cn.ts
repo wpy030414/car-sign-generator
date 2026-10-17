@@ -1,7 +1,7 @@
 /**
  * 中国机动车号牌标准 —— GA 36-2018《中华人民共和国机动车号牌》。
  *
- * 数据来源：仓库内 `document/GA 36-2018 中华人民共和国机动车号牌.pdf`（扫描件，逐图实测）。
+ * 数据来源：GA 36-2018 标准正文（扫描件逐图实测；原件不入库）。
  *
  * - 表1：号牌种类、外廓尺寸、颜色（17 类 + 临时入境系列）
  *   汽车类 440×140（大型汽车后号牌/挂车 440×220；新能源 480×140）
@@ -59,18 +59,21 @@ const neSmallFill: Fill = {
 // ── 字体 ────────────────────────────────────────────────────
 const latin = FONTS.latin; // 号牌专用字体：数字/字母
 const han = FONTS.han; // 汉字（号牌模具为专用黑体）
+// 新能源号牌专用拉丁字形：与普通号牌不同，`1` 带衬线（防涂改/易辨识）
+const cnELatin = FONTS.cnELatin;
 
 // ── 外廓尺寸与圆角（表1 + 各「式样」图）──────────────────────
-const CAR = { w: 440, h: 140, r: 10, border: 1.5 };
-const CAR_REAR = { w: 440, h: 220, r: 10, border: 1.5 };
-const NE = { w: 480, h: 140, r: 10, border: 1.5 };
-const MOTO = { w: 220, h: 140, r: 8, border: 1.5 };
-const TEMP = { w: 220, h: 140, r: 8, border: 1.5 };
+// 边框线宽：GA 36 规定 1.5mm；渲染加粗到 2mm，更贴近实牌观感
+const CAR = { w: 440, h: 140, r: 10, border: 2 };
+const CAR_REAR = { w: 440, h: 220, r: 10, border: 2 };
+const NE = { w: 480, h: 140, r: 10, border: 2 };
+const MOTO = { w: 220, h: 140, r: 8, border: 2 };
+const TEMP = { w: 220, h: 140, r: 8, border: 2 };
 
 /**
  * 中国号牌边框。
  *
- * - 几何（GA 36-2018 图1 尺寸链）：牌边向内 3mm 为底色，再向内是 1.5mm 白边，
+ * - 几何（GA 36-2018 图1 尺寸链）：牌边向内 3mm 为底色，再向内是白边（1.5mm，渲染加粗到 2mm），
  *   即边框线外缘距牌边 3mm，外侧留一圈板体底色的细边；
  * - 号牌为整块金属板冲压成型，边框与字符同为凸起面，开启「模拟冲压」时一并进入浮雕；
  * - 其它国家为印刷描边，不参与。
@@ -141,6 +144,11 @@ function carClasses(o: {
   gap?: number;
   /** 含分隔点的加宽间隔 */
   wideGap?: number;
+  /**
+   * 字母/数字字体。缺省为普通号牌字体；新能源号牌传入 `cnELatin`，
+   * 其 `1` 为衬线字形，缺失字符按字体回退链取 CN 号牌字形。
+   */
+  latinFont?: FontRef;
 }) {
   const hanW = o.hanW ?? 45;
   const cellW = o.cellW ?? 45;
@@ -151,9 +159,9 @@ function carClasses(o: {
   return {
     hanzi: mkClass('hanzi', { width: hanW, height, color: o.fg, gapAfter: gap, font: han, stroke: 12 }),
     hanziWide: mkClass('hanziWide', { width: hanW, height, color: o.fg, gapAfter: wideGap, font: han, stroke: 12 }),
-    letter: mkClass('letter', { width: cellW, height, color: o.fg, gapAfter: gap }),
-    letterWide: mkClass('letterWide', { width: cellW, height, color: o.fg, gapAfter: wideGap }),
-    serial: mkClass('serial', { width: cellW, height, color: o.fg, gapAfter: gap }),
+    letter: mkClass('letter', { width: cellW, height, color: o.fg, gapAfter: gap, font: o.latinFont }),
+    letterWide: mkClass('letterWide', { width: cellW, height, color: o.fg, gapAfter: wideGap, font: o.latinFont }),
+    serial: mkClass('serial', { width: cellW, height, color: o.fg, gapAfter: gap, font: o.latinFont }),
     suffix: mkClass('suffix', { width: hanW, height, color: o.fg, gapAfter: 0, font: han, stroke: 12 }),
     suffixRed: mkClass('suffixRed', { width: hanW, height, color: CN_COLORS.red, gapAfter: 0, font: han, stroke: 12 }),
   } as Record<string, CharClass>;
@@ -430,7 +438,8 @@ function neType(opts: {
     size: { width: NE.w, height: NE.h },
     body: { fill: opts.fill, radius: NE.r },
     border: cnBorder(NE.border, CN_COLORS.black),
-    charClasses: carClasses({ fg: CN_COLORS.black, hanW: 45, cellW: 43, gap: 9, wideGap: 49 }),
+    // 新能源：字母/数字使用专用字形（`1` 带衬线），省简称仍用号牌汉字字体
+    charClasses: carClasses({ fg: CN_COLORS.black, hanW: 45, cellW: 43, gap: 9, wideGap: 49, latinFont: cnELatin }),
     runs: [{
       kind: 'run', primary: true,
       origin: { x: 0, y: (NE.h - 90) / 2 },
@@ -447,11 +456,12 @@ function neType(opts: {
         ? [{
             kind: 'component' as const,
             name: 'cn-ne-panel',
-            props: { x: 137, y: 5, width: NE.w - 137 - 5, height: NE.h - 10, radius: 10, color: CN_COLORS.neGreen },
+            // 上下各留 8mm：不顶着黑色边框（边框内缘在 4.5mm），与实测图比例一致
+            props: { x: 137, y: 8, width: NE.w - 137 - 5, height: NE.h - 16, radius: 10, color: CN_COLORS.neGreen },
           }]
         : []),
       carScrews(NE.w, NE.h),
-      { kind: 'component' as const, name: 'cn-ne-emblem', props: { cx: 137, cy: 70, r: 16 } },
+      { kind: 'component' as const, name: 'cn-ne-emblem', props: { cx: 137, cy: 70, r: 14 } },
     ],
     fields: [fProv, fLetter, { ...fSerial(6), placeholder: opts.defaultSerial, help: opts.help }],
     defaults: { province: '京', letter: 'A', serial: opts.defaultSerial },
@@ -724,7 +734,7 @@ types.push({
   citation: 'GA 36-2018 表1 / 图19（300×165，两行：京·M / 5 位序号，黄底黑字）',
   size: { width: 300, height: 165 },
   body: { fill: solid(CN_COLORS.yellow), radius: 10 },
-  border: cnBorder(1.5, CN_COLORS.black),
+  border: cnBorder(2, CN_COLORS.black),
   charClasses: {
     lowHanzi: mkClass('lowHanzi', { width: 45, height: 45, color: CN_COLORS.black, gapAfter: 34, font: han, stroke: 10, cellFill: true }),
     lowLetter: mkClass('lowLetter', { width: 45, height: 45, color: CN_COLORS.black, gapAfter: 0, cellFill: true }),

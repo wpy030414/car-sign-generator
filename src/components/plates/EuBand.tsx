@@ -44,18 +44,30 @@ export interface EuBandProps {
  * 用 path 绘制以获得「左圆右方」的形状。
  */
 export function EuBand({ dec, type, values, idPrefix }: EuBandProps) {
-  const props = (dec.props ?? {}) as { bandWidth?: number; height?: number; radius?: number };
+  const props = (dec.props ?? {}) as {
+    bandWidth?: number;
+    height?: number;
+    radius?: number;
+    side?: 'left' | 'right';
+    code?: string;
+    showStars?: boolean;
+  };
   const bandW = props.bandWidth ?? 45;
   const H = props.height ?? type.size.height;
   const R = props.radius ?? 10;
+  const W = type.size.width;
+  const right = props.side === 'right';
+  const showStars = props.showStars ?? true;
 
-  // 蓝带路径：左上圆角 → 右上直角 → 右下直角 → 左下圆角
-  const bandPath = `M${R} 0 L${bandW} 0 L${bandW} ${H} L${R} ${H} A${R} ${R} 0 0 1 0 ${H - R} L0 ${R} A${R} ${R} 0 0 1 ${R} 0 Z`;
+  // 蓝带路径：靠左时左侧圆角、靠右时右侧圆角
+  const bandPath = right
+    ? `M${W - bandW} 0 L${W - R} 0 A${R} ${R} 0 0 1 ${W} ${R} L${W} ${H - R} A${R} ${R} 0 0 1 ${W - R} ${H} L${W - bandW} ${H} Z`
+    : `M${R} 0 L${bandW} 0 L${bandW} ${H} L${R} ${H} A${R} ${R} 0 0 1 0 ${H - R} L0 ${R} A${R} ${R} 0 0 1 ${R} 0 Z`;
 
-  const country = (values.country ?? 'D').toUpperCase();
+  const country = (props.code ?? values.country ?? 'D').toUpperCase();
 
   // 12 星环
-  const stars = Array.from({ length: EU_STARS.count }, (_, i) => {
+  const stars = !showStars ? [] : Array.from({ length: EU_STARS.count }, (_, i) => {
     const ang = (i * 360) / EU_STARS.count - 90; // 从正上开始
     const rad = (ang * Math.PI) / 180;
     const cx = EU_STARS.cx + EU_STARS.radius * Math.cos(rad);
@@ -77,7 +89,8 @@ export function EuBand({ dec, type, values, idPrefix }: EuBandProps) {
   };
   const cellW = codeClass.advance ?? EU_COUNTRY_CODE.height * 0.62;
   const totalW = codeChars.length * cellW;
-  const startX = EU_STARS.cx - totalW / 2;
+  const centerX = right ? W - bandW / 2 : EU_STARS.cx;
+  const startX = centerX - totalW / 2;
   // 基线 baseline → 单元格顶边 = baseline - 字高
   const cellTop = EU_COUNTRY_CODE.baseline - EU_COUNTRY_CODE.height;
 

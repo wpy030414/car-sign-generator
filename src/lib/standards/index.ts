@@ -32,10 +32,11 @@ export const TYPE_TO_REGION: Record<string, Region> = Object.fromEntries(
 
 /** 每个 region 的默认（首个）类型 */
 export const DEFAULT_TYPE: Record<Region, string> = {
-  CN: cnStandard.types[0].id,
-  EU: euStandard.types[0].id,
-  US: usStandard.types[0].id,
-  JP: jpStandard.types[0].id,
+  CN: 'cn-small-car',
+  // 欧盟默认德国式、美国默认通用标准牌（各州版式在其后，可自行选择）
+  EU: 'eu-de',
+  US: 'us-standard',
+  JP: 'jp-private-mid',
 };
 
 export function getPlateType(typeId: string): PlateType {

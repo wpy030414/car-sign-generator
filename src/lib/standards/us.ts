@@ -6,18 +6,20 @@
  * - FHWA Series E Modified（Highway Gothic）字形比例
  * - 实测 DC 2013 样牌（160px/in 等比）标定字符度量
  *
- * 字体：官方 Highway Gothic / FHWA Series E Modified 非自由许可，
- *   采用开源 **Overpass Bold**（Red Hat 对 Highway Gothic 的 OFL 重绘）替代。
+ * 字体：**Roadgeek 2014 Series E(M)**（MIT）—— 按 FHWA《Standard Alphabets for
+ *   Traffic Control Devices》公开的公有领域字形数据复刻，与美国号牌实际使用的
+ *   Highway Gothic / Series E Modified 同源，而非近似替代。
  *
  * 关键：全比例 FHWA Series E(M) 对 12in 牌过宽（3in cap 时 ABC1234 需 18in），
- *   实际牌面模具是**压缩切工**。Overpass 本身源自 Highway Gothic，
- *   用 `fill`（各向异性）模式压到实测 ink 尺寸（字宽≈31.2mm @ cap 76.2mm）。
+ *   实际牌面模具是**压缩切工**，故用 `fill`（各向异性）模式压到实测 ink 尺寸
+ *   （字宽≈31.2mm @ cap 76.2mm）。
  *
  * 注：美国号牌各州图形/配色差异极大，本实现取**通用物理标准**
  *   （尺寸、字体、安装孔）+ 白底黑字基线，不含州别图案。
  */
 
 import { FONTS } from '@/lib/plate/fonts';
+import { usStateTypes } from './us-states';
 import type { PlateType, Standard } from '@/types/standard';
 
 export const US_COLORS = {
@@ -39,9 +41,9 @@ const HOLE_SPACING = 177.8;
 const HOLE_D = 7.0;
 const HOLE_Y = 19.0; // 距顶边
 
-const overpass = FONTS.overpass;
+const roadgeek = FONTS.roadgeek;
 
-/** Overpass 字符类（fill 模式压缩到实测 ink 尺寸）。 */
+/** FHWA Series E(M) 字符类（fill 模式压缩到实测 ink 尺寸）。 */
 function usClass(id: string, color: string, height = CAP, width = GLYPH_W) {
   return {
     id,
@@ -51,12 +53,12 @@ function usClass(id: string, color: string, height = CAP, width = GLYPH_W) {
     fit: 'fill' as const,
     stroke: STROKE,
     fill: { kind: 'solid' as const, color },
-    font: overpass,
+    font: roadgeek,
   };
 }
 
 const CITATION =
-  '1956 AMA 统一协议（6×12in）+ FHWA Series E Modified（Highway Gothic）；字体以 Overpass Bold (OFL) 替代';
+  '1956 AMA 统一协议（6×12in）+ FHWA Series E Modified；字体 Roadgeek 2014 EM（MIT）';
 
 function usType(opts: {
   id: string;
@@ -156,7 +158,7 @@ export const usStandard: Standard = {
   region: 'US',
   name: '美国',
   citation: '1956 AMA 6×12in 统一协议 + FHWA Series E Modified',
-  types,
+  types: [...usStateTypes, ...types],
 };
 
 export const US_GEOM = { PLATE, CAP, STROKE, GLYPH_W, PITCH, GAP, HOLE_SPACING, HOLE_D, HOLE_Y, IN };

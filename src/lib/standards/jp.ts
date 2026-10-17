@@ -12,11 +12,13 @@
  * ⚠️ 颜色非法定：法令只规定「营业车用绿底白字、自用车用白底绿字，其余由大臣定」，
  *   hex 为业界实测标准值（非 Wikimedia 示意图的淡化色）。
  *
- * 布局（中板 330×165，原点=左上，实测第一号様式等比图）：
- *   顶部左：地名（品川，cap≈31mm，x2→70）
- *   顶部右：分类番号（500，cap≈36mm，x79→145）
- *   左中：平假名（あ，cap≈44mm，x5→50，y66→114）
- *   右下：一连指定番号（12-34，cap≈100mm，右对齐至 x≈325，贴底）
+ * 布局（逐项取自国土交通省「第一号様式（その二）」标注，单位 mm）：
+ *   中板 330×165：上边距 15 / 上排字高 40 / 行距 15 / 下排字高 80 / 下边距 15
+ *     地名：字宽 40，右对齐至 x=168；分类番号：字宽 23，x=176 起
+ *     平假名：40×40，x=20，垂直居中于下排（y=90）
+ *     一连番号：字宽 40、字高 80、间隔 15，右对齐至 x=310
+ *   大板 440×220：上边距 22.5 / 上排 60 / 行距 15 / 下排 100 / 下边距 22.5，
+ *     分类番号字宽 30、一连番号字宽 60、间隔 20
  */
 
 import { FONTS } from '@/lib/plate/fonts';
@@ -77,52 +79,67 @@ function jpType(opts: JpTypeOpts): PlateType {
   const { bg, fg } = opts;
   const W = opts.size.w;
   const H = opts.size.h;
-  const s = W / MID.w; // 相对中板的缩放系数
 
-  // 各元素 cap 高（中板实测，按 s 缩放）
-  const placeH = 31 * s;
-  const classNumH = 36 * s;
-  const kanaH = 44 * s;
-  const serialH = 100 * s;
+  // 版式参数（中板实测；大板按第一号様式（その四）标注；小板按中板等比）
+  const mid = opts.size.h === MID.h;
+  const large = opts.size.h === LARGE.h;
+  const s = W / MID.w;
+  const P = mid
+    ? { topY: 15, topH: 40, gap: 15, botH: 80, kanaX: 20, kanaY: 90, kanaW: 40,
+        nameRight: 168, classX: 176, classW: 23, classGap: 2,
+        serialW: 40, serialGap: 15, serialRight: 310, hyphenW: 20 }
+    : large
+      ? { topY: 22.5, topH: 60, gap: 15, botH: 100, kanaX: 25, kanaY: 117.5, kanaW: 40,
+          nameRight: 210, classX: 220, classW: 30, classGap: 3,
+          serialW: 60, serialGap: 15, serialRight: 415, hyphenW: 30 }
+      : { topY: 15 * s, topH: 40 * s, gap: 15 * s, botH: 80 * s, kanaX: 20 * s, kanaY: 90 * s,
+          kanaW: 40 * s, nameRight: 168 * s, classX: 176 * s, classW: 23 * s, classGap: 2 * s,
+          serialW: 40 * s, serialGap: 15 * s, serialRight: W - 20 * s, hyphenW: 20 * s };
+  const botY = P.topY + P.topH + P.gap;
 
   // 字符类
   const classes: PlateType['charClasses'] = {
-    place: jpClass('place', fg, placeH, placeH), // 地名汉字近正方
-    classNum: jpClass('classNum', fg, classNumH, classNumH * 0.55),
-    kana: jpClass('kana', fg, kanaH, kanaH),
-    serialDigit: jpClass('serialDigit', fg, serialH, serialH * 0.5), // 2:1 压缩
-    serialOther: jpClass('serialOther', fg, serialH, serialH * 0.26), // 连字符/中黒窄
+    place: jpClass('place', fg, P.topH, P.classW === 23 ? P.topH : P.topH), // 地名近似正方，字宽 40
+    classNum: jpClass('classNum', fg, P.topH, P.classW),
+    kana: jpClass('kana', fg, P.kanaW, P.kanaW),
+    serialDigit: jpClass('serialDigit', fg, P.botH, P.serialW),
+    serialOther: jpClass('serialOther', fg, P.botH, P.hyphenW),
   };
+  // 地名在备注中为固定字宽 40（大板同为 40）
+  classes.place.width = large ? 40 : P.topH;
+  classes.place.advance = classes.place.width;
 
   // 布局序列
   const runs: Run[] = [
-    // 地名（顶部左）
+    // 地名（上排，右对齐到分类番号左侧）
     {
       kind: 'free',
-      origin: { x: 8 * s, y: 4 * s },
-      gap: 1 * s,
+      origin: { x: 0, y: P.topY },
+      gap: 0,
       field: 'place',
       auto: { digit: 'place', letter: 'place', other: 'place' },
-      align: 'left',
+      align: 'right',
+      width: P.nameRight,
+      shrinkToFit: true,
     },
-    // 平假名（左中）
+    // 平假名（左下）
     {
       kind: 'free',
-      origin: { x: 6 * s, y: 66 * s },
+      origin: { x: P.kanaX, y: P.kanaY },
       gap: 0,
       field: 'kana',
       auto: { digit: 'kana', letter: 'kana', other: 'kana' },
       align: 'left',
     },
-    // 一连指定番号（右下，右对齐至 x≈325*s，贴底）
+    // 一连指定番号（下排，右对齐）
     {
       kind: 'free',
-      origin: { x: 0, y: H - serialH - 3 * s },
-      gap: 2 * s,
+      origin: { x: 0, y: botY },
+      gap: P.serialGap,
       field: 'serial',
       auto: { digit: 'serialDigit', letter: 'serialDigit', other: 'serialOther' },
       align: 'right',
-      width: W - 5 * s, // 右缘留 5mm 边距
+      width: P.serialRight,
       shrinkToFit: true,
     },
   ];
@@ -131,8 +148,8 @@ function jpType(opts: JpTypeOpts): PlateType {
     // 分类番号（顶部，地名右侧固定位）
     runs.splice(1, 0, {
       kind: 'free',
-      origin: { x: 82 * s, y: 2 * s },
-      gap: 1.5 * s,
+      origin: { x: P.classX, y: P.topY },
+      gap: P.classGap,
       field: 'classNum',
       auto: { digit: 'classNum', letter: 'classNum', other: 'classNum' },
       align: 'left',

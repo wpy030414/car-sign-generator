@@ -1,0 +1,177 @@
+/**
+ * 美国各州（含 DC）标准乘用车号牌。
+ *
+ * 数据来源：Wikipedia《United States license plate designs and serial formats》
+ *   「Current Table Format」表（含标准标语、配色描述、序号格式），逐州转录。
+ *   https://en.wikipedia.org/wiki/United_States_license_plate_designs_and_serial_formats
+ *
+ * 版式：统一 12×6in（304.8×152.4mm）、Roadgeek 2014 Series EM（FHWA 字形）。
+ *   州名置于顶部、序号居中、口号置于底部 —— 与实际牌面「州名在上、号码居中」
+ *   的通用结构一致。
+ *
+ * 非目标（与项目边界一致）：各州图案底、州徽、渐变插画等美术图样不在此实现，
+ *   仅还原「底色 / 字色 / 州名 / 口号 / 序号格式」这些可数据化的部分。
+ */
+
+import { FONTS } from '@/lib/plate/fonts';
+import type { Fill, PlateType } from '@/types/standard';
+
+const IN = 25.4;
+export const US_PLATE = { w: 12 * IN, h: 6 * IN, radius: 13, border: 1.8 };
+const CAP = 76.2;
+const GLYPH_W = 31.2;
+const PITCH = 43.7;
+
+const roadgeek = FONTS.roadgeek;
+const solid = (color: string): Fill => ({ kind: 'solid', color });
+
+export interface UsStateSpec {
+  /** 州邮政缩写，如 CA；typeId 为 `us-` + 小写缩写 */
+  code: string;
+  zh: string;
+  en: string;
+  /** 牌照底色 */
+  bg: string;
+  /** 序号字色 */
+  fg: string;
+  /** 州名/口号字色（缺省同 fg） */
+  accent?: string;
+  /** 牌面顶部的州名 */
+  top: string;
+  /** 牌面底部口号 */
+  bottom?: string;
+  /** 合法示例 */
+  sample: string;
+  /** 序号格式正则（源串） */
+  pattern: string;
+  /** 格式说明 */
+  help: string;
+}
+
+/** 51 个辖区（50 州 + 华盛顿特区）的标准乘用车牌。 */
+export const US_STATE_SPECS: UsStateSpec[] = [
+  { code: 'AL', zh: '阿拉巴马州', en: 'Alabama', bg: '#E6EEF5', fg: '#1B3A6B', top: 'ALABAMA', bottom: 'Heart of Dixie', sample: '1AB1234', pattern: '^[0-9]{1,2}[A-Z][A-Z0-9]{5}$', help: '县代码 + 字母 + 数字' },
+  { code: 'AK', zh: '阿拉斯加州', en: 'Alaska', bg: '#F0C31E', fg: '#1B3A6B', top: 'ALASKA', bottom: 'The Last Frontier', sample: 'ABC 123', pattern: '^[A-Z]{3} ?[0-9]{3}$', help: 'ABC 123' },
+  { code: 'AZ', zh: '亚利桑那州', en: 'Arizona', bg: '#E9DCC2', fg: '#1E6B3A', top: 'ARIZONA', bottom: 'Grand Canyon State', sample: 'ABC1234', pattern: '^[A-Z]{3}[0-9]{4}$', help: 'ABC1234' },
+  { code: 'AR', zh: '阿肯色州', en: 'Arkansas', bg: '#FFFFFF', fg: '#111111', top: 'ARKANSAS', bottom: 'The Natural State', sample: 'ABC 12D', pattern: '^[A-Z]{3} ?[0-9]{2}[A-Z]$', help: 'ABC 12D' },
+  { code: 'CA', zh: '加利福尼亚州', en: 'California', bg: '#FFFFFF', fg: '#1B3A6B', accent: '#C8102E', top: 'CALIFORNIA', bottom: 'dmv.ca.gov', sample: '1ABC123', pattern: '^[0-9][A-Z]{3}[0-9]{3}$', help: '1ABC123' },
+  { code: 'CO', zh: '科罗拉多州', en: 'Colorado', bg: '#FFFFFF', fg: '#1E6B3A', top: 'COLORADO', sample: 'ABC-D12', pattern: '^[A-Z]{3}-?[A-Z]?[0-9]{2}$', help: 'ABC-D12' },
+  { code: 'CT', zh: '康涅狄格州', en: 'Connecticut', bg: '#DCE6F2', fg: '#1B3A6B', top: 'CONNECTICUT', bottom: 'Constitution State', sample: 'AB 12345', pattern: '^[A-Z]{2} ?[0-9]{5}$', help: 'AB 12345' },
+  { code: 'DE', zh: '特拉华州', en: 'Delaware', bg: '#14284B', fg: '#E7C24A', top: 'DELAWARE', bottom: 'The First State', sample: '123456', pattern: '^[0-9]{1,6}$', help: '1–6 位数字' },
+  { code: 'DC', zh: '华盛顿哥伦比亚特区', en: 'District of Columbia', bg: '#FFFFFF', fg: '#1B3A6B', accent: '#C8102E', top: 'WASHINGTON D.C.', bottom: 'Taxation without Representation', sample: 'AB-1234', pattern: '^[A-Z]{2}-?[0-9]{4}$', help: 'AB-1234' },
+  { code: 'FL', zh: '佛罗里达州', en: 'Florida', bg: '#FFFFFF', fg: '#1E6B3A', accent: '#E87722', top: 'FLORIDA', bottom: 'Sunshine State', sample: 'ABC D12', pattern: '^[A-Z]{3} ?[A-Z][0-9]{2}$', help: 'ABC D12' },
+  { code: 'GA', zh: '佐治亚州', en: 'Georgia', bg: '#FFFFFF', fg: '#111111', top: 'GEORGIA', bottom: 'Peach State', sample: 'ABC1234', pattern: '^[A-Z]{3}[0-9]{4}$', help: 'ABC1234' },
+  { code: 'HI', zh: '夏威夷州', en: 'Hawaii', bg: '#FFFFFF', fg: '#111111', top: 'HAWAII', bottom: 'Aloha State', sample: 'ABC 123', pattern: '^[A-Z]{3} ?[0-9]{3}$', help: 'ABC 123' },
+  { code: 'ID', zh: '爱达荷州', en: 'Idaho', bg: '#FFFFFF', fg: '#111111', top: 'IDAHO', bottom: 'Scenic Idaho', sample: '1A 12345', pattern: '^[0-9][A-Z] ?[0-9]{5}$', help: '县代码 + 字母 + 5 位数字' },
+  { code: 'IL', zh: '伊利诺伊州', en: 'Illinois', bg: '#1B3A6B', fg: '#FFFFFF', top: 'ILLINOIS', bottom: 'Land of Lincoln', sample: 'AB 12345', pattern: '^[A-Z]{2} ?[0-9]{5}$', help: 'AB 12345' },
+  { code: 'IN', zh: '印第安纳州', en: 'Indiana', bg: '#FFFFFF', fg: '#1B3A6B', top: 'INDIANA', sample: '123ABC', pattern: '^[0-9]{3}[A-Z]{1,3}$', help: '123ABC' },
+  { code: 'IA', zh: '爱荷华州', en: 'Iowa', bg: '#FFFFFF', fg: '#111111', top: 'IOWA', sample: 'ABC 123', pattern: '^[A-Z]{3} ?[0-9]{3}$', help: 'ABC 123' },
+  { code: 'KS', zh: '堪萨斯州', en: 'Kansas', bg: '#DCEBF7', fg: '#111111', top: 'KANSAS', bottom: 'To the Stars', sample: '1234ABC', pattern: '^[0-9]{4}[A-Z]{3}$', help: '1234ABC' },
+  { code: 'KY', zh: '肯塔基州', en: 'Kentucky', bg: '#CFE3F3', fg: '#1B3A6B', top: 'KENTUCKY', sample: 'ABC123', pattern: '^[A-Z]{3}[0-9]{3}$', help: 'ABC123' },
+  { code: 'LA', zh: '路易斯安那州', en: 'Louisiana', bg: '#FFFFFF', fg: '#1B3A6B', top: 'LOUISIANA', bottom: "Sportsman's Paradise", sample: '123 ABC', pattern: '^[0-9]{3} ?[A-Z]{3}$', help: '123 ABC' },
+  { code: 'ME', zh: '缅因州', en: 'Maine', bg: '#FFFFFF', fg: '#1B3A6B', top: 'MAINE', bottom: 'Vacationland', sample: '123 ABC', pattern: '^[0-9]{3} ?[A-Z]{3}$', help: '123 ABC' },
+  { code: 'MD', zh: '马里兰州', en: 'Maryland', bg: '#FFFFFF', fg: '#111111', accent: '#C8102E', top: 'MARYLAND', bottom: 'Maryland Proud', sample: '1AB2345', pattern: '^[0-9][A-Z]{2}[0-9]{4}$', help: '1AB2345' },
+  { code: 'MA', zh: '马萨诸塞州', en: 'Massachusetts', bg: '#FFFFFF', fg: '#C8102E', top: 'MASSACHUSETTS', bottom: 'The Spirit of America', sample: '1AB 234', pattern: '^[0-9][A-Z]{2} ?[0-9]{3}$', help: '1AB 234' },
+  { code: 'MI', zh: '密歇根州', en: 'Michigan', bg: '#FFFFFF', fg: '#1B3A6B', top: 'MICHIGAN', bottom: 'Pure Michigan', sample: 'ABC 1234', pattern: '^[A-Z]{3} ?[0-9]{4}$', help: 'ABC 1234' },
+  { code: 'MN', zh: '明尼苏达州', en: 'Minnesota', bg: '#FFFFFF', fg: '#111111', top: 'MINNESOTA', bottom: 'Explore Minnesota', sample: '123-ABC', pattern: '^[0-9]{3}-?[A-Z]{3}$', help: '123-ABC' },
+  { code: 'MS', zh: '密西西比州', en: 'Mississippi', bg: '#FFFFFF', fg: '#1B3A6B', top: 'MISSISSIPPI', sample: 'ABC 123', pattern: '^[A-Z]{3} ?[0-9]{3}$', help: 'ABC 123' },
+  { code: 'MO', zh: '密苏里州', en: 'Missouri', bg: '#FFFFFF', fg: '#1B3A6B', accent: '#C8102E', top: 'MISSOURI', bottom: 'Show Me State', sample: 'AB1 2CD', pattern: '^[A-Z]{2}[0-9] ?[0-9][A-Z]{2}$', help: 'AB1 2CD' },
+  { code: 'MT', zh: '蒙大拿州', en: 'Montana', bg: '#14284B', fg: '#FFFFFF', top: 'MONTANA', bottom: 'Treasure State', sample: '1-23456A', pattern: '^[0-9]-?[0-9]{5}[A-Z]$', help: '县代码 + 数字 + 字母' },
+  { code: 'NE', zh: '内布拉斯加州', en: 'Nebraska', bg: '#FFFFFF', fg: '#1B3A6B', top: 'NEBRASKA', sample: '1-A123', pattern: '^[0-9]-?[A-Z][0-9]{3}$', help: '1-A123' },
+  { code: 'NV', zh: '内华达州', en: 'Nevada', bg: '#A8CBE8', fg: '#111111', top: 'NEVADA', bottom: 'Home Means Nevada', sample: '123 4A5', pattern: '^[0-9]{3} ?[0-9][A-Z][0-9]$', help: '123 4A5' },
+  { code: 'NH', zh: '新罕布什尔州', en: 'New Hampshire', bg: '#FFFFFF', fg: '#1E6B3A', top: 'NEW HAMPSHIRE', bottom: 'Live Free or Die', sample: '123 4567', pattern: '^[0-9]{3} ?[0-9]{4}$', help: '123 4567' },
+  { code: 'NJ', zh: '新泽西州', en: 'New Jersey', bg: '#F5D04A', fg: '#111111', top: 'NEW JERSEY', bottom: 'Garden State', sample: 'D12-ABC', pattern: '^[A-Z][0-9]{2}-?[A-Z]{3}$', help: 'D12-ABC' },
+  { code: 'NM', zh: '新墨西哥州', en: 'New Mexico', bg: '#F5D04A', fg: '#C8102E', top: 'NEW MEXICO', bottom: 'Land of Enchantment', sample: '123-ABC', pattern: '^[0-9]{3}-?[A-Z]{3}$', help: '123-ABC' },
+  { code: 'NY', zh: '纽约州', en: 'New York', bg: '#FFFFFF', fg: '#1B3A6B', top: 'NEW YORK', bottom: 'Excelsior', sample: 'ABC-1234', pattern: '^[A-Z]{3}-?[0-9]{4}$', help: 'ABC-1234' },
+  { code: 'NC', zh: '北卡罗来纳州', en: 'North Carolina', bg: '#FFFFFF', fg: '#1B3A6B', top: 'NORTH CAROLINA', bottom: 'First in Flight', sample: 'ABC-1234', pattern: '^[A-Z]{3}-?[0-9]{4}$', help: 'ABC-1234' },
+  { code: 'ND', zh: '北达科他州', en: 'North Dakota', bg: '#D6E7F5', fg: '#111111', top: 'NORTH DAKOTA', bottom: 'Legendary', sample: '123 ABC', pattern: '^[0-9]{3} ?[A-Z]{3}$', help: '123 ABC' },
+  { code: 'OH', zh: '俄亥俄州', en: 'Ohio', bg: '#F2E3C6', fg: '#1B3A6B', top: 'OHIO', bottom: 'Birthplace of Aviation', sample: 'ABC 1234', pattern: '^[A-Z]{3} ?[0-9]{4}$', help: 'ABC 1234' },
+  { code: 'OK', zh: '俄克拉荷马州', en: 'Oklahoma', bg: '#FFFFFF', fg: '#1B3A6B', top: 'OKLAHOMA', bottom: 'Imagine That', sample: 'ABC-123', pattern: '^[A-Z]{3}-?[0-9]{3}$', help: 'ABC-123' },
+  { code: 'OR', zh: '俄勒冈州', en: 'Oregon', bg: '#FFFFFF', fg: '#1B3A6B', top: 'OREGON', sample: '123 ABC', pattern: '^[0-9]{3} ?[A-Z]{3}$', help: '123 ABC' },
+  { code: 'PA', zh: '宾夕法尼亚州', en: 'Pennsylvania', bg: '#FFFFFF', fg: '#1B3A6B', top: 'PENNSYLVANIA', bottom: 'Let Freedom Ring', sample: 'ABC1234', pattern: '^[A-Z]{3}[0-9]{4}$', help: 'ABC1234' },
+  { code: 'RI', zh: '罗得岛州', en: 'Rhode Island', bg: '#DCEBF7', fg: '#14284B', top: 'RHODE ISLAND', bottom: 'Ocean State', sample: '1AB 234', pattern: '^[0-9][A-Z]{2} ?[0-9]{3}$', help: '1AB 234' },
+  { code: 'SC', zh: '南卡罗来纳州', en: 'South Carolina', bg: '#FFFFFF', fg: '#111111', top: 'SOUTH CAROLINA', sample: '123ABC', pattern: '^[0-9]{3}[A-Z]{3}$', help: '123ABC' },
+  { code: 'SD', zh: '南达科他州', en: 'South Dakota', bg: '#FFFFFF', fg: '#1B3A6B', top: 'SOUTH DAKOTA', bottom: 'Great Faces. Great Places.', sample: '1A1 234', pattern: '^[0-9][A-Z][0-9] ?[0-9]{3}$', help: '1A1 234' },
+  { code: 'TN', zh: '田纳西州', en: 'Tennessee', bg: '#1B3A6B', fg: '#FFFFFF', top: 'TENNESSEE', bottom: 'The Volunteer State', sample: 'ABC 1234', pattern: '^[A-Z]{3} ?[0-9]{4}$', help: 'ABC 1234' },
+  { code: 'TX', zh: '德克萨斯州', en: 'Texas', bg: '#FFFFFF', fg: '#111111', top: 'TEXAS', bottom: 'The Lone Star State', sample: 'ABC-1234', pattern: '^[A-Z]{3}-?[0-9]{4}$', help: 'ABC-1234' },
+  { code: 'UT', zh: '犹他州', en: 'Utah', bg: '#FFFFFF', fg: '#1B3A6B', top: 'UTAH', bottom: 'Life Elevated', sample: 'A12 3BC', pattern: '^[A-Z][0-9]{2} ?[0-9][A-Z]{2}$', help: 'A12 3BC' },
+  { code: 'VT', zh: '佛蒙特州', en: 'Vermont', bg: '#1E6B3A', fg: '#FFFFFF', top: 'VERMONT', bottom: 'Green Mountain State', sample: 'ABC 123', pattern: '^[A-Z]{3} ?[0-9]{3}$', help: 'ABC 123' },
+  { code: 'VA', zh: '弗吉尼亚州', en: 'Virginia', bg: '#FFFFFF', fg: '#1B3A6B', top: 'VIRGINIA', bottom: 'Virginia is for Lovers', sample: 'ABC-1234', pattern: '^[A-Z]{3}-?[0-9]{4}$', help: 'ABC-1234' },
+  { code: 'WA', zh: '华盛顿州', en: 'Washington', bg: '#FFFFFF', fg: '#1B3A6B', top: 'WASHINGTON', bottom: 'Evergreen State', sample: 'ABC1234', pattern: '^[A-Z]{3}[0-9]{4}$', help: 'ABC1234' },
+  { code: 'WV', zh: '西弗吉尼亚州', en: 'West Virginia', bg: '#FFFFFF', fg: '#1B3A6B', top: 'WEST VIRGINIA', bottom: 'Wild, Wonderful', sample: '1AB234', pattern: '^[0-9][A-Z]{2}[0-9]{3}$', help: '1AB234' },
+  { code: 'WI', zh: '威斯康星州', en: 'Wisconsin', bg: '#FFFFFF', fg: '#111111', top: 'WISCONSIN', bottom: "America's Dairyland", sample: 'ABC-1234', pattern: '^[A-Z]{3}-?[0-9]{4}$', help: 'ABC-1234' },
+  { code: 'WY', zh: '怀俄明州', en: 'Wyoming', bg: '#14284B', fg: '#FFFFFF', top: 'WYOMING', bottom: "That's WY", sample: '1-23456', pattern: '^[0-9]-?[0-9]{1,5}$', help: '1-23456' },
+];
+
+const CITATION =
+  '12×6in（304.8×152.4mm）+ FHWA Series E Modified（Roadgeek 2014 EM）；底色/口号/序号格式取自各州现行标准牌';
+
+function stateType(sp: UsStateSpec): PlateType {
+  const accent = sp.accent ?? sp.fg;
+  const codeFont = roadgeek;
+  const labelFont = roadgeek;
+
+  return {
+    id: `us-${sp.code.toLowerCase()}`,
+    label: `${sp.zh}（${sp.en}）`,
+    citation: CITATION,
+    size: { width: US_PLATE.w, height: US_PLATE.h },
+    body: { fill: solid(sp.bg), radius: US_PLATE.radius },
+    border: { width: US_PLATE.border, fill: solid(sp.fg) },
+    charClasses: {
+      code: {
+        id: 'code', height: CAP - 14, width: GLYPH_W, advance: GLYPH_W, fit: 'fill',
+        fill: solid(sp.fg), font: codeFont,
+      },
+      top: {
+        id: 'top', height: 14, width: 9, advance: 13.5, fit: 'uniform',
+        fill: solid(accent), font: labelFont,
+      },
+      bottom: {
+        id: 'bottom', height: 9, width: 6, advance: 8.5, fit: 'uniform',
+        fill: solid(accent), font: labelFont,
+      },
+    },
+    runs: [
+      {
+        kind: 'free', origin: { x: 10, y: 6 }, gap: 1.2, field: 'topText',
+        auto: { digit: 'top', letter: 'top', other: 'top' },
+        align: 'center', width: US_PLATE.w - 20,
+      },
+      {
+        kind: 'free', origin: { x: 24, y: 38 }, gap: 12.5, field: 'code',
+        auto: { digit: 'code', letter: 'code', other: 'code' },
+        align: 'center', width: US_PLATE.w - 48, shrinkToFit: true,
+      },
+      {
+        kind: 'free', origin: { x: 10, y: 132 }, gap: 1, field: 'bottomText',
+        auto: { digit: 'bottom', letter: 'bottom', other: 'bottom' },
+        align: 'center', width: US_PLATE.w - 48, shrinkToFit: true,
+      },
+    ],
+    decorations: [
+      {
+        kind: 'screws',
+        positions: [
+          { x: (US_PLATE.w - 177.8) / 2, y: 19 },
+          { x: (US_PLATE.w + 177.8) / 2, y: 19 },
+        ],
+        r: 3.5,
+        fill: '#E8E8E8',
+        stroke: '#999999',
+      },
+    ],
+    fields: [
+      { key: 'code', label: '序号', maxLength: 8, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -', placeholder: sp.sample, help: sp.help },
+      { key: 'topText', label: '州名', maxLength: 22, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ .-', placeholder: sp.top, help: '牌面顶部文字' },
+      { key: 'bottomText', label: '口号', maxLength: 30, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,\'/-', placeholder: sp.bottom ?? '', help: '牌面底部文字（可留空）' },
+    ],
+    defaults: { code: sp.sample, topText: sp.top, bottomText: sp.bottom ?? '' },
+    sample: sp.sample,
+    pattern: new RegExp(sp.pattern),
+  };
+}
+
+export const usStateTypes: PlateType[] = US_STATE_SPECS.map(stateType);
+
+export { PITCH, CAP, GLYPH_W };

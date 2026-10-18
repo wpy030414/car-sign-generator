@@ -50,10 +50,12 @@ export interface PlateStageProps {
   values: Record<string, string>;
   showScrews: boolean;
   emboss: boolean;
+  /** 字体就绪状态变化（导出按钮据此禁用） */
+  onFontsReadyChange?: (ready: boolean) => void;
 }
 
 export const PlateStage = forwardRef<SVGSVGElement, PlateStageProps>(function PlateStage(
-  { type, values, showScrews, emboss },
+  { type, values, showScrews, emboss, onFontsReadyChange },
   svgRef,
 ) {
   const result = validatePlate(type, values);
@@ -134,6 +136,7 @@ export const PlateStage = forwardRef<SVGSVGElement, PlateStageProps>(function Pl
                 showScrews={showScrews}
                 emboss={emboss}
                 svgRef={svgRef}
+                onFontsReadyChange={onFontsReadyChange}
                 className="mx-auto"
               />
             </div>

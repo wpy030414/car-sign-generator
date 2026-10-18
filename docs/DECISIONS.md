@@ -89,12 +89,12 @@
   1. 内联完整字体。
   2. 构建期用 fontTools/pyftsubset 子集化到号牌字符集。
   3. 运行时动态子集化（subset-font wasm）。
-- **决策**：选方案 2。用 fontTools 在构建期子集化：中国汉字 44 字（14KB）、日本 233 字（94KB）、欧盟/美国拉丁字符集（16-18KB）。子集文件放 `public/fonts/`，运行时 fetch→base64 内联。
-- **为什么选这个**：号牌用字封闭且少，子集化后体积可忽略（全部字体共 ~156KB），base64 内联进导出 SVG 完全可行。构建期子集化简单、确定、无运行时 wasm 依赖。
+- **决策**：选方案 2。用 fontTools 在构建期子集化并转 woff2：中国号牌 74 字（6.3KB）、新能源拉丁 20 字（1.7KB）、日本 189 字（23.1KB）、欧盟 44 字（3.4KB，含合并的空格/连字符）、美国 68 字（3.4KB）。字体文件按**使用国家/地区**命名（`CN-Plate` / `CN-NE-Latin` / `EU-Plate` / `US-Plate` / `JP-Plate`），原始字体名只作来源说明。欧盟标点（空格/连字符）已合并进 `EU-Plate`，不再单独请求。子集文件放 `public/fonts/`，运行时 fetch→base64 内联。
+- **为什么选这个**：号牌用字封闭且少，子集化后体积可忽略（全部字体共约 38KB，较原始字体 ~2.1MB 减少 98%），base64 内联进导出 SVG 完全可行。构建期子集化简单、确定、无运行时 wasm 依赖。
 - **为什么不选其他**：
   - 方案 1：7-10MB base64 ≈ 10-14MB 每次导出，不可接受。
   - 方案 3：运行时 wasm 子集化增加复杂度与首屏开销，而字符集固定无需动态。
-- **后果**：新增字符（如新省份、新地名）需重新子集化。子集化脚本用 fontTools（Python），在构建/发布时运行。日本地名汉字集有限（覆盖主要运输支局），生僻地名可能缺字（回退系统字体）。
+- **后果**：新增字符（如新省份、新地名）需重新子集化。子集化脚本 `scripts/subset-fonts.py` 用 fontTools（Python）；生成的字符覆盖清单由 `fontCoverage.test.ts` 校验，漏更新会在单测阶段失败。日本地名汉字集有限（覆盖主要运输支局），生僻地名可能缺字（回退系统字体）。
 - **何时重新审视**：若需支持任意用户输入汉字（如自定义地名），改为运行时动态子集化或扩大字符集。
 
 ## ADR-006：开源字体替代受版权保护的官方号牌字体
@@ -106,10 +106,10 @@
   1. 使用官方字体（法律风险）。
   2. 用开源近似字体替代，并在 README/代码注明差异。
 - **决策**：选方案 2。
-  - 欧盟：GL-Nummernschild-Mtl（FE-Schrift 克隆，Gutenberg Labo 自由软件许可）。
-  - 美国：Roadgeek 2014 Series EM（MIT），按 FHWA 公开字形数据复刻。
-  - 日本：Noto Sans JP Bold（OFL）。
-  - 中国：ChePaiZiTi（仓库自带的车牌字体）+ Source Han Sans CN（OFL）。
+  - 欧盟：`EU-Plate`（源 GL-Nummernschild-Mtl，FE-Schrift 克隆，Gutenberg Labo 自由软件许可）；空格/连字符已合并进同一字体。
+  - 美国：`US-Plate`（源 Roadgeek 2014 Series EM，MIT），按 FHWA 公开字形数据复刻。
+  - 日本：`JP-Plate`（源 Noto Sans JP Bold，OFL）。
+  - 中国：训练员提供的号牌字体（`CN-Plate`）；新能源拉丁为 `CN-NE-Latin`。
 - **为什么选这个**：合法可分发内嵌；Roadgeek 直接按 FHWA 公有领域字形数据复刻（非近似重绘），GL-Nummernschild 是 FE-Schrift 的精确克隆（ink 比例与标准一致，见 ADR-002），保真度高。
 - **为什么不选其他**：方案 1 有明确法律风险，违背开源项目定位。
 - **后果**：字形与真牌存在细微差异（尤其日本 TRM 数字的 2:1 压缩比例、小松書体假名）。README 已注明。`fill` 拟合模式可把替代字体压到标准 ink 尺寸，缓解比例差异。
@@ -218,15 +218,15 @@
 - **背景**：新能源号牌的拉丁字形与普通号牌不同——最明显的是 `1` 带衬线（底横 + 左上旗），普通号牌则是光杆竖线。这是公安部的防伪/辨识设计：光杆 `1` 易被涂改成 `4`，且无衬线字体中 `1` 与 `I` 难以区分。
 - **考虑过的方案**：
   1. 继续全用 `CN.ttf`，用矢量补丁给新能源号牌的 `1` 加衬线。
-  2. 新能源版式的字母/数字改用专用字体 `CN-E-Latin.otf`（训练员提供）。
-- **决策**：选方案 2。`cn-ne-*` 类型的 `letter` / `letterWide` / `serial` 使用 `FONTS.cnELatin`；省简称汉字仍用 `CN.ttf`。
+  2. 新能源版式的字母/数字改用专用字体 `CN-NE-Latin.woff2`（源 `CN-E-Latin.otf`，训练员提供）。
+- **决策**：选方案 2。`cn-ne-*` 类型的 `letter` / `letterWide` / `serial` 使用 `FONTS.cnELatin`；省简称汉字仍用 `CN-Plate`。
 - **为什么选这个**：`1` 只是最显眼的差异，整套新能源字形都与普通号牌不同；用矢量补丁只修一个字，其余字形仍会风格不一致。专用字体一次覆盖全部拉丁字形，且 `1` 的衬线比例由字体本身给出，不需要在渲染层维护几何常量。
 - **实现要点**：
-  - `FontRef.fallback`：`CN-E-Latin.otf` 只覆盖 `1–9` 与 `A–H/L/M/N`（无 `0`、无 `I/O`，部分字母缺失），因此把 `CN.ttf` 作为回退字体写在 `fallback` 上。
+  - `FontRef.fallback`：`CN-NE-Latin` 只覆盖 `1–9` 与 `A–H/L/M/N`（无 `0`、无 `I/O`，部分字母缺失），因此把 `CN-Plate` 作为回退字体写在 `fallback` 上。
   - 布局度量沿同一条链取字形：`glyphOf` / `capOf` 先查专用字体，缺字形时查回退字体，避免回退字符按 0.5em 的假 advance 摆放。
-  - 渲染的 `font-family` 按 `FontRef.fallback` 生成栈（`'CN-E-Latin', 'ChinaVehicleLicensePlateFont', sans-serif`），浏览器逐字回退，与度量链顺序一致。
+  - 渲染的 `font-family` 按 `FontRef.fallback` 生成栈（`'CN-NE-Latin', 'CN-Plate', sans-serif`），浏览器逐字回退，与度量链顺序一致。
   - `fontsOfType` / `ensureFontsLoaded` / `buildExportFontCss` 统一展开回退链：屏幕加载与导出内联都包含回退字体，缺字形不会落到系统字体。
-- **后果**：当前缺字形（`0`、`J/K/P–Z` 等）会回退到 `CN.ttf`，笔画与专用字形略有差异；补齐字库后无需改任何代码。新增字体仍需在 `METRICS_BY_FAMILY` 注册并生成 build 期度量。
+- **后果**：当前缺字形（`0`、`J/K/P–Z` 等）会回退到 `CN-Plate`，笔画与专用字形略有差异；补齐字库后无需改任何代码。新增字体仍需在 `METRICS_BY_FAMILY` 注册并生成 build 期度量。
 - **何时重新审视**：若拿到覆盖全部号牌字符集的官方新能源字体，可移除 `fallback`；若回退字符在视觉上不可接受，再考虑用 `unicode-range` 分子集或补字。
 
 ## ADR-010：采用 node-app-starter 的 node-page 路线
@@ -250,3 +250,22 @@
   - 新增依赖用 `vp add` / `vp install`；不要引入独立的 vite/vitest/oxlint 配置。
   - 若未来需要服务端能力，`src/` 可平移到 monorepo 的 `apps/web/`，`base` 改回 `/`。
 - **何时重新审视**：需要 SSR/SEO、后端 API、数据库或鉴权时改走 `node-monorepo` 或静态生成器方案。
+
+## ADR-013：字体加载进度与预览占位
+
+- **日期**：2026-10
+- **状态**：已采纳
+- **背景**：屏幕字体通过动态注入 `@font-face` + `font-display:block` 加载。首次访问或切换国家时，字体尚未到达，号牌 SVG 已经渲染，但文字被 `font-display:block` 隐藏——用户先看到一块空白号牌，字体到达后字形突然「跳」出来；导出按钮在这段时间也可点击，随后报「预览尚未就绪」。
+- **考虑过的方案**：
+  1. 保持 `@font-face`，用 `document.fonts.load` 的 Promise 计数做进度。
+  2. `fetch` 字体字节（读 `Response.body` 流）→ `FontFace(ArrayBuffer)` → `document.fonts.add`，以字节数计算进度。
+  3. 预加载全部字体后再挂载应用。
+- **决策**：选方案 2。`ensureFontsLoaded` 流式下载并聚合进度；`usePlateFontLoading` 把进度转成 React 状态；`PlatePreview` 在字体就绪前**不渲染 SVG**，改为渲染与号牌同宽高比的占位块 + 进度条。字体就绪后一次性挂载 SVG，导出按钮由 `fontsReady` 控制。加载失败时退回系统字体继续渲染。
+- **为什么选这个**：方案 1 只能给出「字体个数」进度，单个大字体仍是一次 0→100；方案 2 能给出真实下载比例，且同一份 ArrayBuffer 可直接复用于导出 base64，避免二次请求。方案 3 会让首屏完全阻塞在字体上。
+- **实现要点**：
+  - 状态带字体集合指纹（family+src）；切换类型时即使 effect 尚未执行，也能在当帧判定「新字体未就绪」，不会闪一帧空白号牌。
+  - 预览占位保持 `aspect-ratio`，字体到达时布局不跳动。
+  - `FontFace` 在 `await face.load()` 成功后才 `document.fonts.add`，避免半加载状态参与渲染。
+  - 若响应被 gzip/br 压缩，`Content-Length` 与解压后字节数不一致，进度退化为不确定态而不是显示错误百分比。
+- **后果**：屏幕字体不再走 `@font-face` 注入；新增字体只需提供 `FontRef`，加载/进度/导出缓存自动生效。E2E 用路由延迟字体请求，断言加载期间出现进度条且没有号牌 SVG。
+- **何时重新审视**：若浏览器对 `FontFace(ArrayBuffer)` 支持退化，或改用预加载/Service Worker 缓存策略可让字体在首帧前就绪，可简化此流程。

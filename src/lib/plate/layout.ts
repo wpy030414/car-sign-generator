@@ -32,15 +32,20 @@ import type {
   Slot,
 } from '@/types/standard';
 
+/**
+ * 字形别名：字体里同一字形可能有多个码位，但度量文件只记录其中一个。
+ * 日本号牌中黒在 Noto 子集里是半角 `･`（U+FF65），标准字符集写的是 `・`
+ * （U+30FB）；子集化时已在 cmap 里把后者指向前者，这里让度量查询也走同一别名。
+ */
+const GLYPH_ALIASES: Record<string, string> = { '・': '･' };
+
 /** FontRef.family → FONT_METRICS 键的映射。 */
 const METRICS_BY_FAMILY: Record<string, keyof typeof FONT_METRICS> = {
-  ChinaVehicleLicensePlateFont: 'CNPlate',
-  'CN-E-Latin': 'CNELatin',
-  'ChePaiZiTi-Punct': 'Latin',
-  'GL-Nummernschild-Mtl': 'FE',
-  'Roadgeek 2014 Series EM': 'Roadgeek',
-  'Noto Sans JP': 'NotoJP',
-  'FZ-Carnumber': 'FZJP',
+  'CN-Plate': 'CNPlate',
+  'CN-NE-Latin': 'CNELatin',
+  'EU-Plate': 'FE',
+  'US-Plate': 'Roadgeek',
+  'JP-Plate': 'NotoJP',
 };
 
 export interface FontMetricsEntry {
@@ -61,7 +66,7 @@ export function metricsFor(font: FontRef): FontMetricsEntry {
  * 这类字形在 `fill` 模式下会被纵向拉伸成一整块实心矩形（美国/日本号牌曾如此）。
  */
 export function capOf(font: FontRef): { top: number; height: number } {
-  // 走 glyphOf 以便 `FontRef.fallback` 链生效（如 CN-E-Latin 没有 `0`）
+  // 走 glyphOf 以便 `FontRef.fallback` 链生效（如 CN-NE-Latin 没有 `0`）
   for (const ch of ['H', 'E', '0']) {
     const g = glyphOf(font, ch);
     if (g.y0 !== undefined && g.y1 !== undefined) {
@@ -74,13 +79,15 @@ export function capOf(font: FontRef): { top: number; height: number } {
 /**
  * 取某字符的 ink 度量。
  *
- * 沿 `FontRef.fallback` 链查找：专用字体只覆盖部分字符时（CN-E-Latin），
+ * 沿 `FontRef.fallback` 链查找：专用字体只覆盖部分字符时（CN-NE-Latin），
  * 缺失字形必须用回退字体的度量，否则会按 0.5 em 的假 advance 摆放。
  * 全链都没有该字形时退化为 advance-only（无 ink）。
  */
 export function glyphOf(font: FontRef, char: string): GlyphMetrics {
+  const alias = GLYPH_ALIASES[char];
   for (let f: FontRef | undefined = font; f; f = f.fallback) {
-    const g = metricsFor(f).glyphs[char];
+    const glyphs = metricsFor(f).glyphs;
+    const g = glyphs[char] ?? (alias ? glyphs[alias] : undefined);
     if (g) return g;
   }
   const m = metricsFor(font);

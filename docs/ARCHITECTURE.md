@@ -56,7 +56,7 @@
 
 **导出流**：点「下载 PNG」→ `ExportBar` 读 `svgRef.current` → `exportPlatePng`：克隆 SVG → `buildExportFontCss`（字体转 base64 `@font-face`）注入 `<style>` → 写入目标像素尺寸 → `assertNoExternalRefs` → `XMLSerializer` → `Blob` URL → `Image.decode` → `Canvas.drawImage`（scale = longEdge/max(W,H)）→ `toBlob('image/png')` → `downloadBlob`。
 
-**字体流**：屏幕——`ensureFontsLoaded` 注入 `@font-face`（src=public 路径）+ `document.fonts.load`。导出——`buildExportFontCss` fetch 字体→base64→`@font-face`（src=data URI）内联进 SVG（canvas 栅格化时唯一可靠字体源）。
+**字体流**：屏幕——`ensureFontsLoaded` fetch 字体字节（`Response.body` 读流）→ `FontFace(ArrayBuffer)` → `document.fonts.add`；下载进度经 `onProgress` 聚合，`PlatePreview` 在字体就绪前显示同比例进度条占位，不渲染 SVG。字节缓存在内存里，导出——`buildExportFontCss` 复用同一份 ArrayBuffer → base64 → `@font-face`（src=data URI）内联进 SVG（canvas 栅格化时唯一可靠字体源），不二次下载。
 
 ## 外部系统
 
@@ -67,7 +67,7 @@
 
 - **mm 单一真源**：标准数据里不出现 px；导出像素尺寸由 mm × scale 推导。
 - **字符 ink 拟合**：标准给的是字符**物理 ink 尺寸**（如中国汽车字符 45×90mm、摩托车序号 30×60mm），字体自然比例与之不符，故用 `glyphTransform` 各向异性（fill）或等比（uniform）缩放 ink box 到精确 mm；连字符、中黒等矮字形改以字体 cap 高为纵向基准，避免被拉成实心块。这是「严格参照标准」的关键，不能退化为 `letter-spacing` 或自然排版。
-- **分隔点矢量绘制**：Latin.ttf 无 U+00B7，旧实现用外链 PNG（污染导出画布）。新实现用 `<circle>`。
+- **分隔点矢量绘制**：号牌字体无 U+00B7，旧实现用外链 PNG（污染导出画布）。新实现用 `<circle>`。
 - **导出字体必须内联**：canvas 栅格化 SVG（经 `Image`）运行在隔离文档，无法访问页面 `document.fonts`；外链字体会失败或跨域污染画布导致 `toBlob` 抛错。故 base64 内联 + `assertNoExternalRefs` 守卫。
-- **字体子集化**：CJK 字体原文件 7-10MB，子集化到号牌字符集（中国 44 字、日本 233 字）后 ~14-94KB，可 base64 内联进导出 SVG。
+- **字体子集化**：CJK 字体原文件 7-10MB（中国号牌字体 1.9MB / 8k+ 字），子集化到号牌字符集（中国 74 字、日本 189 字）并转 woff2 后，五个字体合计约 38KB，可 base64 内联进导出 SVG。覆盖清单由 `fontCoverage.test.ts` 校验。
 - **布局引擎纯函数**：不依赖 DOM/canvas 测量，构建期度量 + 运行时纯计算 → 确定性、可单测（见 `layout.test.ts`）。

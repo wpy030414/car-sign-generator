@@ -7,7 +7,7 @@
  * - Council of Europe《Flag of Europe》graphic spec (2004)（星环几何：R = H/3，星径 = H/9）
  * - 德国 FZV Anlage 4 / DIN 74069（FE-Schrift Mittelschrift 字形度量 —— 实际通行实现）
  *
- * 关键校验：实测 FE-Schrift 克隆字体（GL-Nummernschild-Mtl）数字 ink 宽高比
+ * 关键校验：实测 FE-Schrift 克隆字体（`EU-Plate`，源 GL-Nummernschild-Mtl）数字 ink 宽高比
  *   356/600 = 0.593，与标准数字 44.5mm/75mm = 0.593 **完全一致**，
  *   证明该字体即 FE-Schrift，且应采用 `uniform`（等比）拟合而非拉伸。
  *
@@ -50,7 +50,7 @@ export const EU_STARS = {
 /** 国别代码：白色大写，字高 20mm，基线距蓝带底 10mm（Reg 2411/98 Annex）。 */
 export const EU_COUNTRY_CODE = { height: 20, baseline: PLATE.h - 10, color: EU_COLORS.white };
 
-const fe = FONTS.fe; // GL-Nummernschild-Mtl = FE-Schrift (Mittelschrift) 克隆
+const fe = FONTS.fe; // EU-Plate：FE-Schrift (Mittelschrift) 克隆（源 GL-Nummernschild-Mtl）
 
 function feClass(id: string, color: string) {
   return {
@@ -136,13 +136,14 @@ function euType(opts: {
     charClasses: {
       letter: feClass('letter', fg),
       digit: feClass('digit', fg),
-      // FE-Mittelschrift 无连字符/点等标点，用含标点的号牌字体补齐
+      // 空格/连字符已合并进 EU-Plate（见 scripts/subset-fonts.py）。
+      // 连字符是矮字形：用 fill 把 ink 宽精确压到 32mm 单元格，
+      // 否则 uniform 会按 FE 的 cap 高把连字符放大到约 37.6mm、压到相邻字符。
       other: {
         ...feClass('other', fg),
         width: 32,
         advance: 32,
-        fit: 'uniform',
-        font: FONTS.punct,
+        fit: 'fill',
       },
       country: countryCodeClass,
     },

@@ -31,9 +31,11 @@ export interface ExportBarProps {
   type: PlateType;
   /** 预览 SVG 元素引用（由 PlateStage 通过 ref 暴露，导出时读取 .current） */
   svgRef: React.RefObject<SVGSVGElement | null>;
+  /** 字体未就绪时预览还没有 SVG，导出按钮应禁用 */
+  fontsReady?: boolean;
 }
 
-export function ExportBar({ type, svgRef }: ExportBarProps) {
+export function ExportBar({ type, svgRef, fontsReady = true }: ExportBarProps) {
   const longEdge = usePlateStore((s) => s.exportLongEdge);
   const setLongEdge = usePlateStore((s) => s.setExportLongEdge);
   const [busy, setBusy] = useState(false);
@@ -45,6 +47,7 @@ export function ExportBar({ type, svgRef }: ExportBarProps) {
 
   const handleExport = useCallback(async () => {
     setError(null);
+    if (!fontsReady) return;
     const svgEl = svgRef.current;
     if (!svgEl) {
       setError('预览尚未就绪');
@@ -63,7 +66,7 @@ export function ExportBar({ type, svgRef }: ExportBarProps) {
       setBusy(false);
       if (timer.current) clearTimeout(timer.current);
     }
-  }, [svgRef, type, longEdge]);
+  }, [fontsReady, svgRef, type, longEdge]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -83,9 +86,13 @@ export function ExportBar({ type, svgRef }: ExportBarProps) {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handleExport} disabled={busy} className="gap-2">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          {busy ? '导出中…' : '下载 PNG'}
+        <Button onClick={handleExport} disabled={busy || !fontsReady} className="gap-2">
+          {busy || !fontsReady ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {busy ? '导出中…' : !fontsReady ? '字体加载中…' : '下载 PNG'}
         </Button>
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}

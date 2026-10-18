@@ -90,7 +90,7 @@ function cnBorder(width: number, color: string): PlateType['border'] {
   return { width, fill: solid(color), inset: 3, emboss: true };
 }
 
-const PROV = '京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新';
+const PROV = '京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿';
 /** 表3：序号中不使用 I、O。 */
 const SERIAL_CHARS = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
@@ -458,7 +458,7 @@ types.push({
   decorations: [carScrews(), dotDeco(1, CN_COLORS.white)],
   fields: [fProv, fLetter, fSerial(5)],
   defaults: { province: '京', letter: 'A', serial: '00001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{5}$/,
   sample: '京A·00001',
 });
 
@@ -475,7 +475,7 @@ types.push({
   decorations: [carScrews(), dotDeco(1, CN_COLORS.black)],
   fields: [fProv, fLetter, fSerial(5)],
   defaults: { province: '京', letter: 'A', serial: '00001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{5}$/,
   sample: '京A·00001',
 });
 
@@ -492,7 +492,7 @@ types.push({
   decorations: [carScrews(CAR_REAR.w, CAR_REAR.h), dotDeco(0, CN_COLORS.black, 0)],
   fields: [fProv, fLetter, fSerial(5)],
   defaults: { province: '京', letter: 'A', serial: 'F0236' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{5}$/,
   sample: '京·A / F0236',
 });
 
@@ -509,7 +509,8 @@ types.push({
   decorations: [carScrews(CAR_REAR.w, CAR_REAR.h), dotDeco(0, CN_COLORS.black, 0)],
   fields: [fProv, fLetter, fSerial(4)],
   defaults: { province: '京', letter: 'A', serial: '0001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{4}挂$/,
+  pattern:
+    /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{4}挂$/,
   sample: '京·A / 0001挂',
 });
 
@@ -577,7 +578,8 @@ function neType(opts: {
     ],
     fields: [fProv, fLetter, { ...fSerial(6), placeholder: opts.defaultSerial, help: opts.help }],
     defaults: { province: '京', letter: 'A', serial: opts.defaultSerial },
-    pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{6}$/,
+    pattern:
+      /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{6}$/,
     sample: opts.sample,
   };
 }
@@ -618,7 +620,8 @@ types.push({
   decorations: [carScrews(), dotDeco(1, CN_COLORS.black)],
   fields: [fProv, fLetter, fSerial(4)],
   defaults: { province: '京', letter: 'A', serial: '0001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{4}学$/,
+  pattern:
+    /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{4}学$/,
   sample: '京A·0001学',
 });
 
@@ -635,7 +638,8 @@ types.push({
   decorations: [carScrews(), dotDeco(0, CN_COLORS.black)],
   fields: [fProv, fLetter, fSerial(4, '序号 4 位，格式：京·A0001警')],
   defaults: { province: '京', letter: 'A', serial: '0001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{4}警$/,
+  pattern:
+    /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{4}警$/,
   sample: '京·A0001警',
 });
 
@@ -715,7 +719,8 @@ types.push({
     { key: 'serial2', label: '序号', maxLength: 2, charset: '0123456789', placeholder: '78' },
   ],
   defaults: { province: '沪', serial1: '224', serial2: '78' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][0-9]{3}[0-9]{2}领$/,
+  pattern:
+    /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][0-9]{3}[0-9]{2}领$/,
   sample: '沪224·78领',
 });
 
@@ -754,7 +759,7 @@ types.push({
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.black, 0)],
   fields: [fProv, fLetter, fSerial(5)],
   defaults: { province: '京', letter: 'A', serial: 'A0062' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{5}$/,
   sample: '京·A / A0062',
 });
 
@@ -771,7 +776,7 @@ types.push({
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.white, 0)],
   fields: [fProv, fLetter, fSerial(5)],
   defaults: { province: '京', letter: 'A', serial: '00001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{5}$/,
   sample: '京·A / 00001',
 });
 
@@ -788,7 +793,8 @@ types.push({
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.black, 0)],
   fields: [fProv, fLetter, fSerial(4)],
   defaults: { province: '京', letter: 'A', serial: '0001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{4}学$/,
+  pattern:
+    /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{4}学$/,
   sample: '京·A / 0001学',
 });
 
@@ -810,7 +816,8 @@ types.push({
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.black, 0)],
   fields: [fProv, fLetter, fSerial(4)],
   defaults: { province: '京', letter: 'A', serial: '0006' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{4}警$/,
+  pattern:
+    /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{4}警$/,
   sample: '京·A / 0006警',
 });
 
@@ -882,7 +889,7 @@ types.push({
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.white, 0)],
   fields: [fProv, fSerial(5)],
   defaults: { province: '沪', serial: '22478' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新]领[0-9]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿]领[0-9]{5}$/,
   sample: '沪·领 / 22478',
 });
 
@@ -956,7 +963,7 @@ types.push({
   ],
   fields: [fProv, fLetter, fSerial(5)],
   defaults: { province: '京', letter: 'M', serial: '00000' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9A-Z]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9A-Z]{5}$/,
   sample: '京·M / 00000',
 });
 
@@ -1011,7 +1018,7 @@ types.push({
   decorations: [],
   fields: [fProv, fLetter, { ...fSerial(5), charset: '0123456789' }],
   defaults: { province: '京', letter: 'A', serial: '00001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][0-9]{5}$/,
+  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9]{5}$/,
   sample: '京A00001',
 });
 

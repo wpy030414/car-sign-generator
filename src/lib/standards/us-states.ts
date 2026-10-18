@@ -5,7 +5,7 @@
  *   「Current Table Format」表（含标准标语、配色描述、序号格式），逐州转录。
  *   https://en.wikipedia.org/wiki/United_States_license_plate_designs_and_serial_formats
  *
- * 版式：统一 12×6in（304.8×152.4mm）、Roadgeek 2014 Series EM（FHWA 字形）。
+ * 版式：统一 12×6in（304.8×152.4mm）、`US-Plate`（Roadgeek 2014 Series EM，FHWA 字形）。
  *   州名置于顶部、序号居中、口号置于底部 —— 与实际牌面「州名在上、号码居中」
  *   的通用结构一致。
  *

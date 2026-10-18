@@ -48,7 +48,7 @@ export function getPlateType(typeId: string): PlateType {
 /**
  * 收集一个 PlateType 用到的所有字体（屏幕加载 + 导出内联用）。
  *
- * 沿 `FontRef.fallback` 展开：新能源号牌的 CN-E-Latin 只覆盖部分字符，
+ * 沿 `FontRef.fallback` 展开：新能源号牌的 CN-NE-Latin 只覆盖部分字符，
  * 回退的 CN 号牌字体也必须一起加载/内联，否则缺字形处会落到系统字体。
  */
 export function fontsOfType(type: PlateType): FontRef[] {

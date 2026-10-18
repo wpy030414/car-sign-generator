@@ -17,6 +17,8 @@ function pngSize(buf: Buffer): { w: number; h: number } {
 
 /** 抓号牌 SVG 的文本内容与 viewBox。 */
 async function plateInfo(page: import('@playwright/test').Page) {
+  // 字体就绪前预览显示加载占位，先等真实 SVG 挂载
+  await page.locator('svg[data-plate-svg]').waitFor();
   return page.evaluate(() => {
     const svg = document.querySelector('svg[data-plate-svg]');
     if (!svg) return null;
@@ -259,6 +261,7 @@ test.describe('URL 持久化', () => {
 test.describe('新能源号牌背景', () => {
   test('小型牌自下而上为 50% 纯绿 + 33.33% 绿白渐变 + 16.67% 纯白', async ({ page }) => {
     await page.goto('/?region=CN&type=cn-ne-small');
+    await page.locator('svg[data-plate-svg]').waitFor();
     const stops = await page.evaluate(() =>
       [...document.querySelectorAll('svg[data-plate-svg] linearGradient stop')].map((s) => ({
         offset: parseFloat(s.getAttribute('offset') ?? ''),
@@ -285,17 +288,17 @@ test.describe('新能源号牌背景', () => {
       );
     expect(glyphs.map((g) => g.ch).join('')).toBe('京AD10234');
     // 省简称：仍是号牌汉字字体
-    expect(glyphs[0].ff).toContain("'ChinaVehicleLicensePlateFont'");
-    expect(glyphs[0].ff).not.toContain('CN-E-Latin');
+    expect(glyphs[0].ff).toContain("'CN-Plate'");
+    expect(glyphs[0].ff).not.toContain('CN-NE-Latin');
     // 代号 + 序号：全部走新能源专用字体
-    for (const g of glyphs.slice(1)) expect(g.ff).toContain("'CN-E-Latin'");
+    for (const g of glyphs.slice(1)) expect(g.ff).toContain("'CN-NE-Latin'");
     // `1` 的衬线来自字体本身，不是渲染层补丁
-    expect(glyphs.find((g) => g.ch === '1')?.ff).toContain("'CN-E-Latin'");
+    expect(glyphs.find((g) => g.ch === '1')?.ff).toContain("'CN-NE-Latin'");
 
     // 专用字体确实已加载
     const loaded = await page.evaluate(async () => {
       await document.fonts.ready;
-      return document.fonts.check('100px "CN-E-Latin"', '1');
+      return document.fonts.check('100px "CN-NE-Latin"', '1');
     });
     expect(loaded).toBe(true);
 
@@ -305,8 +308,8 @@ test.describe('新能源号牌背景', () => {
       .locator('svg[data-plate-svg] text')
       .first()
       .getAttribute('font-family');
-    expect(normal).toContain("'ChinaVehicleLicensePlateFont'");
-    expect(normal).not.toContain('CN-E-Latin');
+    expect(normal).toContain("'CN-Plate'");
+    expect(normal).not.toContain('CN-NE-Latin');
   });
 
   test('大型新能源绿色矩形上下各留 8mm，不顶黑色边框', async ({ page }) => {
@@ -323,6 +326,7 @@ test.describe('新能源号牌背景', () => {
 
   test('新能源专用标识直径 28mm（半径 14mm）', async ({ page }) => {
     await page.goto('/?region=CN&type=cn-ne-small');
+    await page.locator('svg[data-plate-svg]').waitFor();
     const size = await page.evaluate(() => {
       const img = document.querySelector('svg[data-plate-svg] image')!;
       return { w: Number(img.getAttribute('width')), h: Number(img.getAttribute('height')) };
@@ -335,6 +339,7 @@ test.describe('新能源号牌背景', () => {
 test.describe('导出设置', () => {
   test('安装孔尺寸符合标准：汽车长圆孔 15×7，摩托圆孔 φ7', async ({ page }) => {
     await page.goto('/?region=CN&type=cn-small-car');
+    await page.locator('svg[data-plate-svg]').waitFor();
     const car = await page.evaluate(() => {
       const r = document.querySelector('svg[data-plate-svg] rect[stroke="#999999"]')!;
       return { w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')) };
@@ -343,6 +348,7 @@ test.describe('导出设置', () => {
     expect(car.h).toBeCloseTo(7, 1);
 
     await page.goto('/?region=CN&type=cn-moto');
+    await page.locator('svg[data-plate-svg]').waitFor();
     const moto = await page.evaluate(() => {
       const r = document.querySelector('svg[data-plate-svg] rect[stroke="#999999"]')!;
       return { w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')) };
@@ -353,6 +359,7 @@ test.describe('导出设置', () => {
 
   test('安装孔开关生效', async ({ page }) => {
     await page.goto('/?region=CN&type=cn-small-car');
+    await page.locator('svg[data-plate-svg]').waitFor();
     const before = await page.locator('svg[data-plate-svg] rect[stroke="#999999"]').count();
     expect(before).toBe(4);
     await page.locator('[role=switch]').first().click();
@@ -363,6 +370,7 @@ test.describe('导出设置', () => {
   test('模拟冲压：字符以高度场 + 定向光生成浮雕，而非偏移副本', async ({ page }) => {
     await page.goto('/?region=CN&type=cn-small-car');
     const svg = page.locator('svg[data-plate-svg]');
+    await svg.waitFor();
     const embossed = svg.locator('g[filter*="emboss"]');
     const glyphs = await svg.locator('text').count(); // 未开启时 text 数 = 字符数
     expect(glyphs).toBeGreaterThan(0);
@@ -647,5 +655,56 @@ test.describe('预览区缩放与全屏', () => {
     await expect(stage).toHaveAttribute('data-fullscreen', 'true');
     await page.keyboard.press('Escape');
     await expect(stage).not.toHaveAttribute('data-fullscreen', 'true');
+  });
+});
+
+test.describe('字体加载', () => {
+  test('字体加载期间显示进度条而不是空白号牌，加载完成后可导出', async ({ page }) => {
+    // 人为放慢字体请求，确保能观察到加载态（本地字体通常瞬间完成）
+    await page.route('**/fonts/**', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await route.continue();
+    });
+
+    await page.goto('/?region=JP&type=jp-private-mid');
+
+    const loading = page.locator('[data-font-loading]');
+    await expect(loading).toBeVisible();
+    await expect(loading.getByRole('progressbar')).toBeVisible();
+    await expect(page.getByRole('button', { name: /字体加载中/ })).toBeDisabled();
+    // 字体未就绪时不应有空白/回退字形的号牌 SVG
+    await expect(page.locator('svg[data-plate-svg]')).toHaveCount(0);
+
+    // 字体到达后换成真实号牌，导出按钮恢复
+    await expect(page.locator('svg[data-plate-svg]')).toBeVisible({ timeout: 15000 });
+    await expect(loading).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '下载 PNG' })).toBeEnabled();
+  });
+
+  test('切换国家时先显示进度条，新字体就绪后才替换号牌', async ({ page }) => {
+    await page.route('**/fonts/JP-Plate.woff2', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await route.continue();
+    });
+
+    await page.goto('/');
+    // 默认中国号牌字体先加载完成
+    await expect(page.locator('svg[data-plate-svg]')).toHaveAttribute(
+      'data-plate-svg',
+      'cn-small-car',
+    );
+
+    await page.getByRole('tab', { name: '日本' }).click();
+    // 切换后的当帧就进入加载态，不渲染新类型的空白号牌
+    await expect(page.locator('[data-font-loading]')).toBeVisible();
+    await expect(page.locator('svg[data-plate-svg]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /字体加载中/ })).toBeDisabled();
+
+    await expect(page.locator('svg[data-plate-svg]')).toHaveAttribute(
+      'data-plate-svg',
+      'jp-private-mid',
+      { timeout: 15000 },
+    );
+    await expect(page.locator('[data-font-loading]')).toHaveCount(0);
   });
 });

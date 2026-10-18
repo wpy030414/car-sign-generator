@@ -1,18 +1,19 @@
 /**
  * 号牌预览：包装通用 PlateSvg，注入字体加载与各国装饰组件（欧盟蓝带、中国分隔点）。
  *
- * 字体加载：挂载/切换类型时确保该类型用到的字体已加载（屏幕渲染），
- * 并预热 base64 缓存（导出用）。字体加载是副作用，故用 effect 触发；
- * 但渲染不阻塞于字体就绪 —— 字体到达后浏览器自动重排字形，无需额外 state。
+ * 字体加载：按号牌类型收集字体并下载。字体就绪前不渲染 SVG，而是显示同比例的
+ * 进度条占位 —— 避免 font-display:block 期间先出现一块空白号牌。
+ * 字体加载失败时退回系统字体继续渲染（不阻塞预览）。
  */
 
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import { CnDot } from './plates/CnDot';
 import { CnNeEmblem, CnNeGreenPanel } from './plates/CnNeEmblem';
 import { EuBand } from './plates/EuBand';
 import { PlateSvg, type DecorationRenderer } from './plates/PlateSvg';
-import { ensureFontsLoaded, warmFontCache } from '@/lib/plate/fonts';
-import { fontsOfType, getPlateType } from '@/lib/standards';
+import { usePlateFontLoading, type FontLoadingState } from '@/lib/plate/useFontLoading';
+import { getPlateType } from '@/lib/standards';
 import type { ComponentDecoration, PlateType } from '@/types/standard';
 
 const DECORATIONS: Record<string, DecorationRenderer> = {
@@ -54,6 +55,48 @@ const DECORATIONS: Record<string, DecorationRenderer> = {
   },
 };
 
+/** 字体加载占位：保持号牌宽高比，避免字体到达时布局跳动。 */
+function FontLoadingPlaceholder({ type, state }: { type: PlateType; state: FontLoadingState }) {
+  const percent = Math.round(state.ratio * 100);
+  return (
+    <div
+      data-font-loading
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className="relative mx-auto flex w-full items-center justify-center overflow-hidden rounded-lg border bg-muted"
+      style={{ aspectRatio: `${type.size.width} / ${type.size.height}` }}
+    >
+      <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-background/70 via-muted to-background/40" />
+      <div className="relative flex w-[min(76%,18rem)] flex-col items-center gap-1.5 px-4 py-3 text-center">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span>
+            {state.indeterminate && percent === 0 ? '字体加载中…' : `字体加载中… ${percent}%`}
+            {state.totalFonts > 1 ? ` · ${state.loadedFonts}/${state.totalFonts}` : ''}
+          </span>
+        </div>
+        <div
+          role="progressbar"
+          aria-label="字体加载进度"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={state.indeterminate ? undefined : percent}
+          aria-valuetext={state.indeterminate ? '正在加载字体' : `${percent}%`}
+          className="h-1.5 w-full overflow-hidden rounded-full bg-background"
+        >
+          <div
+            className={`h-full rounded-full bg-primary transition-[width] duration-200 ${state.indeterminate ? 'animate-pulse' : ''}`}
+            style={{
+              width: state.indeterminate && percent === 0 ? '35%' : `${percent}%`,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export interface PlatePreviewProps {
   type: PlateType;
   values: Record<string, string>;
@@ -62,6 +105,8 @@ export interface PlatePreviewProps {
   emboss?: boolean;
   /** 导出时用于拿到 svg 元素 */
   svgRef?: React.Ref<SVGSVGElement>;
+  /** 字体是否已就绪（导出按钮据此禁用） */
+  onFontsReadyChange?: (ready: boolean) => void;
   className?: string;
 }
 
@@ -71,33 +116,31 @@ export function PlatePreview({
   showScrews = true,
   emboss = false,
   svgRef,
+  onFontsReadyChange,
   className,
 }: PlatePreviewProps) {
-  useEffect(() => {
-    let alive = true;
-    const fonts = fontsOfType(type);
-    // 屏幕渲染字体；加载失败也继续（回退字形），导出时才严格要求内联
-    ensureFontsLoaded(fonts).catch(() => undefined);
-    // 空闲时预热 base64（不阻塞首屏）
-    const id = window.setTimeout(() => {
-      if (alive) warmFontCache(fonts).catch(() => undefined);
-    }, 800);
-    return () => {
-      alive = false;
-      window.clearTimeout(id);
-    };
-  }, [type]);
+  const fontState = usePlateFontLoading(type);
+  const ready = fontState.status !== 'loading';
+
+  // 布局阶段同步通知，避免类型切换时导出按钮短暂停留在可用态
+  useLayoutEffect(() => {
+    onFontsReadyChange?.(ready);
+  }, [ready, onFontsReadyChange]);
 
   return (
     <div className={className} style={{ position: 'relative' }}>
-      <PlateSvg
-        type={type}
-        values={values}
-        componentDecorations={DECORATIONS}
-        showScrews={showScrews}
-        emboss={emboss}
-        svgRef={svgRef}
-      />
+      {ready ? (
+        <PlateSvg
+          type={type}
+          values={values}
+          componentDecorations={DECORATIONS}
+          showScrews={showScrews}
+          emboss={emboss}
+          svgRef={svgRef}
+        />
+      ) : (
+        <FontLoadingPlaceholder type={type} state={fontState} />
+      )}
     </div>
   );
 }

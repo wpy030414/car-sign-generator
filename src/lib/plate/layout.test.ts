@@ -157,19 +157,19 @@ describe('字体回退链', () => {
   const neSmall = getPlateType('cn-ne-small');
 
   it('专用字体覆盖的字形用自己的度量，缺失字形回退 CNPlate', () => {
-    // CN-E-Latin 的 `1` 带衬线，ink 比光杆竖线宽
+    // CN-NE-Latin 的 `1` 带衬线，ink 比光杆竖线宽
     expect(glyphOf(FONTS.cnELatin, '1').x0).toBeCloseTo(0.155, 5);
     expect(glyphOf(FONTS.cnELatin, '1').x1).toBeCloseTo(0.379, 5);
-    // `0` 不在 CN-E-Latin 中 → 回退 CN 号牌字体的度量
+    // `0` 不在 CN-NE-Latin 中 → 回退 CN 号牌字体的度量
     expect(glyphOf(FONTS.cnELatin, '0')).toEqual(FONT_METRICS.CNPlate.glyphs['0']);
   });
 
   it('新能源版式的 letters/digits 用专用字体，汉字仍用号牌汉字字体', () => {
-    expect(neSmall.charClasses.serial.font.family).toBe('CN-E-Latin');
-    expect(neSmall.charClasses.letterWide.font.family).toBe('CN-E-Latin');
-    expect(neSmall.charClasses.hanzi.font.family).toBe('ChinaVehicleLicensePlateFont');
+    expect(neSmall.charClasses.serial.font.family).toBe('CN-NE-Latin');
+    expect(neSmall.charClasses.letterWide.font.family).toBe('CN-NE-Latin');
+    expect(neSmall.charClasses.hanzi.font.family).toBe('CN-Plate');
     // 普通号牌不受影响
-    expect(smallCar.charClasses.serial.font.family).toBe('ChinaVehicleLicensePlateFont');
+    expect(smallCar.charClasses.serial.font.family).toBe('CN-Plate');
   });
 });
 
@@ -205,6 +205,32 @@ describe('标准注册表完整性', () => {
           expect(t.charClasses[run.auto.other]).toBeTruthy();
         }
       }
+    }
+  });
+});
+
+describe('欧盟标点合并', () => {
+  it('EU-Plate 自身覆盖空格/连字符，连字符有真实 ink 度量', () => {
+    const eu = getPlateType('eu-de');
+    expect(eu.charClasses.other.font.family).toBe('EU-Plate');
+    const hyphen = glyphOf(FONTS.fe, '-');
+    expect(hyphen.x0).toBeDefined();
+    expect(hyphen.x1).toBeDefined();
+    // 矮字形不会被当成无 ink 空格（否则会按 1mm 字号缩到看不见）
+    expect(hyphen.y1! - hyphen.y0!).toBeGreaterThan(0.05);
+  });
+});
+
+describe('发牌机关字符度量', () => {
+  it('所有可填写的发牌机关字符都有可用的 ink 度量', () => {
+    const type = getPlateType('cn-small-car');
+    const spec = type.fields.find((field) => field.key === 'province');
+    expect(spec?.charset).toBeTruthy();
+    for (const ch of spec!.charset!) {
+      const glyph = glyphOf(FONTS.cn, ch);
+      expect(glyph.x0, ch).toBeDefined();
+      expect(glyph.x1, ch).toBeDefined();
+      expect(glyph.y1! - glyph.y0!, ch).toBeGreaterThan(0.5);
     }
   });
 });

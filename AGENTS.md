@@ -48,7 +48,7 @@
 - `src/components/{Editor,PlateStage,PlatePreview,ExportBar}.tsx` — 应用 UI
 - `src/store/plateStore.ts` — Zustand 状态 + URL 持久化
 - `src/components/ui/` — shadcn/ui 组件（生成物，勿手改）
-- `public/fonts/` — 号牌字体（CN.ttf、新能源 CN-E-Latin.otf、FE/Roadgeek/FZ/Noto 等）
+- `public/fonts/` — 号牌字体子集（`CN-Plate` / `CN-NE-Latin` / `EU-Plate` / `US-Plate` / `JP-Plate`，均为 woff2）
 - `src/styles/globals.css` + `tailwind.config.js` / `postcss.config.js` — Tailwind 3.4 主题与 shadcn/ui CSS 变量
 - `.github/workflows/deploy.yml` — GitHub Pages 构建与发布（vp check → vp test → vp build）
 - `docs/` — PRD / ARCHITECTURE / DECISIONS / specs

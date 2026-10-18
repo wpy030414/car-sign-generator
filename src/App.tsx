@@ -4,7 +4,7 @@
  * 响应式：窄屏（<lg）时上下堆叠，预览在上、编辑器在下。
  */
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Editor } from '@/components/Editor';
 import { ExportBar } from '@/components/ExportBar';
 import { GitHubLink } from '@/components/GitHubLink';
@@ -24,6 +24,7 @@ export default function App() {
   const setEmboss = usePlateStore((s) => s.setEmboss);
   const type = getPlateType(typeId);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const [fontsReady, setFontsReady] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,11 +54,12 @@ export default function App() {
               values={values}
               showScrews={showScrews}
               emboss={emboss}
+              onFontsReadyChange={setFontsReady}
             />
 
             <Card className="py-0">
               <CardContent className="flex flex-col gap-5 p-5">
-                <ExportBar type={type} svgRef={svgRef} />
+                <ExportBar type={type} svgRef={svgRef} fontsReady={fontsReady} />
 
                 <div className="flex items-center justify-between border-t pt-4">
                   <div className="space-y-0.5">

@@ -13,8 +13,9 @@
   - 渐变经 `fill.ts` 生成 `<linearGradient>` defs，ID 用 `useId()` 保证全页唯一（多牌同屏不冲突）。
   - 特殊几何装饰经 `componentDecorations` 注册表分发（欧盟 `eu-band`、中国 `cn-dot`）。
 - **字体加载**（`src/lib/plate/fonts.ts`）：
-  - 屏幕：`ensureFontsLoaded` 动态注入 `@font-face`（src = public 路径）+ `document.fonts.load` 触发；幂等（同 family 只注入一次）。
-  - 导出：`buildExportFontCss` 把字体 fetch→base64→`@font-face`（src = data URI），按 family 去重、带缓存。
+  - 屏幕：`ensureFontsLoaded` fetch 字体字节（流式读取，可报告下载进度）→ `FontFace(ArrayBuffer)` → `document.fonts.add`；幂等、并发安全，同一 family 只下载/注册一次。
+  - 导出：`buildExportFontCss` 复用已下载的 ArrayBuffer → base64 → `@font-face`（src = data URI），按 family 去重、带缓存，不二次请求。
+  - 预览：`PlatePreview` 用 `usePlateFontLoading` 订阅进度；字体就绪前渲染同宽高比的进度条占位，不渲染 `<svg>`。加载失败时退回系统字体继续渲染。导出按钮在字体就绪前禁用。
 - **导出**（`src/lib/plate/export.ts`）：
   1. `await document.fonts.ready`。
   2. 克隆预览 SVG（不触碰 UI DOM）。
@@ -40,7 +41,8 @@
 
 ## 边界条件
 
-- 字体加载失败：屏幕渲染回退到系统字体（视觉可察觉但不崩）；导出时 base64 内联仍用原字体文件，故导出字形正确。
+- 字体加载失败：屏幕渲染回退到系统字体（视觉可察觉但不崩）；导出时 base64 内联会重试字体请求，成功则导出字形正确。
+- 慢网/首次访问：预览显示进度条而不是空白号牌；字体就绪后才出现 SVG，避免字形「跳」出。
 - 字体缺字形（子集外字符）：导出图渲染为回退字形/豆腐块 —— 由字段 charset 约束预防。
 - 白色/透明号牌：预览容器用棋盘格背景以便观察边界；导出默认透明背景，可选 `background` 填充。
 - 极端长宽比（日本大板 440×220、欧盟 520×110）：longEdge 固定长边，短边按比例缩小。
@@ -50,7 +52,7 @@
 
 - [x] 四国各版式屏幕预览渲染正确（Playwright 截图逐一核对：中国 7 类、欧盟 2 类、美国 2 类、日本 2 类）。
 - [x] 四国 4K 导出均生成有效 PNG，长边恰为 3840px，宽高比等于号牌 mm 比例（中国 3.14、欧盟 4.73、美日 2.0）。
-- [x] 导出图字形与屏幕预览一致（中国 ChePaiZiTi 数字 + Source Han Sans 汉字、欧盟 FE-Schrift、美国 Roadgeek、日本 Noto Sans JP 均正确嵌入，无豆腐块）。
+- [x] 导出图字形与屏幕预览一致（中国 `CN-Plate`、欧盟 `EU-Plate`、美国 `US-Plate`、日本 `JP-Plate` 均正确嵌入，无豆腐块）。
 - [x] 导出无画布污染错误（`toBlob` 成功返回）。
 - [x] UI 中点击「下载 PNG」实际触发浏览器下载（Playwright download 事件验证，文件名 `cn-small-car-3840px.png`）。
 - [x] 分辨率可选 2K/4K/8K；安装孔可开关（关闭后导出干净图样）。

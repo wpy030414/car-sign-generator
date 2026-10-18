@@ -7,7 +7,7 @@
  * - JIS D 0201（涂装/耐候，不含字形）
  *
  * 字体：官方番号標用 TRM gothic（数字）+ 小松書体（假名）均非自由许可，
- *   采用开源 **Noto Sans JP Bold**（OFL）替代，用 `fill` 模式压到规定 ink 尺寸。
+ *   采用开源 **Noto Sans JP Bold**（OFL，仓库内命名为 `JP-Plate`）替代，用 `fill` 模式压到规定 ink 尺寸。
  *
  * ⚠️ 颜色非法定：法令只规定「营业车用绿底白字、自用车用白底绿字，其余由大臣定」，
  *   hex 为业界实测标准值（非 Wikimedia 示意图的淡化色）。
@@ -54,7 +54,7 @@ const RADIUS = 5;
 const BORDER = 1.5;
 
 const CITATION =
-  '道路運送車両法施行規則 第11条 / 第一号様式 + 国土交通省告示；字体以 Noto Sans JP (OFL) 替代 TRM/小松書体';
+  '道路運送車両法施行規則 第11条 / 第一号様式 + 国土交通省告示；字体以 JP-Plate（Noto Sans JP, OFL）替代 TRM/小松書体';
 
 /** 一连指定番号 charset：数字 + 连字符 + 中黒。 */
 const SERIAL_CHARSET = '0123456789-・';

@@ -77,10 +77,7 @@ export function buildPlateString(type: PlateType, values: Record<string, string>
 }
 
 /** 校验整个号牌。 */
-export function validatePlate(
-  type: PlateType,
-  values: Record<string, string>,
-): ValidationResult {
+export function validatePlate(type: PlateType, values: Record<string, string>): ValidationResult {
   const fieldErrors: FieldError[] = [];
   for (const spec of type.fields) {
     const err = validateField(spec, values[spec.key] ?? '');
@@ -103,6 +100,8 @@ export function sanitizeInput(spec: FieldSpec, raw: string): string {
   let v = raw;
   if (spec.charset && spec.charset.length > 0) {
     const allowed = new Set(spec.charset);
+    // 号牌字符集只含单码点字符，按码点拆分即为逐字符处理
+    // oxlint-disable-next-line typescript/no-misused-spread
     v = [...v].filter((ch) => allowed.has(ch)).join('');
   }
   return v.slice(0, spec.maxLength);

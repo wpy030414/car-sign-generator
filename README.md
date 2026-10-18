@@ -14,25 +14,33 @@
 
 ## 如何安装和运行？
 
-- **前置要求**：Node.js ≥ 20、pnpm ≥ 9。
-- **安装步骤**：
+- **前置要求**：Node.js 24（版本钉在 `.nvmrc`）、vp（Vite+）。
+- **首次安装 vp**（macOS / Linux）：
   ```bash
-  pnpm install
+  curl -fsSL https://vite.plus | bash
+  . ~/.config/vite-plus/env
+  ```
+- **安装依赖**：
+  ```bash
+  vp install
   ```
 - **运行 / 启动**：
   ```bash
-  pnpm dev        # 开发服务器（默认 http://localhost:5173）
-  pnpm build      # 生产构建到 dist/
-  pnpm preview    # 预览生产构建
-  pnpm test       # 运行单元测试（Vitest）
-  pnpm lint       # oxlint
+  vp dev          # 开发服务器（默认 http://localhost:5173）
+  vp build        # 生产构建到 dist/
+  vp preview      # 预览生产构建
+  vp check        # 格式 + lint + 类型（CI 同款）
+  vp test run     # 单元测试（Vitest，由 vp 驱动）
+  playwright test # 端到端测试（Playwright）
   ```
+- **包管理**：`package.json` 不声明 `packageManager`，vp 依据 `pnpm-lock.yaml` 自动检测并代理；网络受限时可在用户级 `~/.npmrc` 配置境内镜像，不提交到仓库。
 
 ## 部署
 
 - **线上地址**：<https://wpy030414.github.io/car-sign-generator/>
-- **方式**：GitHub Actions（`.github/workflows/deploy-pages.yml`）在推送到 `main` 或手动触发时构建并发布到 GitHub Pages 项目站点。
-- **子路径**：站点部署在 `/car-sign-generator/` 下，工作流通过 `BASE_PATH` 注入 Vite `base`；本地开发/预览仍以 `/` 为根，不影响 Playwright。
+- **方式**：GitHub Actions（`.github/workflows/deploy.yml`）在推送到 `main` 或手动触发时执行 `vp check`、`vp test run`、`vp build`，经 `upload-pages-artifact` + `deploy-pages` 发布，不推送 `gh-pages` 分支。
+- **子路径**：`base` 只由 CI 注入的 `PAGES_BASE_PATH` 决定，代码不对域名或仓库名做任何推断。项目页默认取 `/<repo>/`；用户页或自定义域在 **Settings → Variables → Actions** 把 `PAGES_BASE_PATH` 设为 `/`。
+- **本地**：`vp dev` / `vp preview` 恒为根路径，不影响 Playwright。
 - **首次启用**：仓库 Settings → Pages → Source 选择 **GitHub Actions**，之后推送即可自动发布。
 
 ## 当前状态
@@ -47,25 +55,29 @@
 
 ## 核心技术
 
-- **语言 / 框架**：TypeScript、React 19、Vite 8。
-- **UI**：Tailwind CSS v4 + shadcn/ui（Radix UI）。
+- **语言 / 框架**：TypeScript、React 19、Vite 8（Rolldown）。
+- **构建 / 检查**：vp（Vite+）统一驱动 `dev` / `build` / `preview` / `check` / `test`。
+- **UI**：Tailwind CSS 3.4 + shadcn/ui（Radix UI）。
+- **部署**：GitHub Pages 纯静态托管（无服务端、无数据库）。
 - **状态**：Zustand（+ URL query 持久化，任意号牌可分享链接）。
 - **渲染**：SVG（1 user unit = 1mm，矢量精度）；布局引擎为纯函数，构建期字体 ink 度量，确定性可单测。
 - **导出**：SVG 序列化 → 字体 base64 内联 → `Image` → `Canvas`（4K）→ PNG `toBlob` 下载。
 - **字体**：
-  | 用途 | 字体 | 说明 |
-  |------|------|------|
-  | 中国 数字/字母/汉字 | **ChinaVehicleLicensePlateFont**（`CN.ttf`） | 训练员提供的号牌专用字体，等宽字距、字宽约 0.5 |
-  | 中国新能源 字母/数字 | **CN-E-Latin**（`CN-E-Latin.otf`） | 训练员提供的新能源专用字形，`1` 带衬线（防涂改 + 易辨识）；缺字形回退 `CN.ttf` |
-  | 欧盟 | GL-Nummernschild（FE-Schrift 复刻） | 该字型无官方数字版（Gutenberg Labo，自由使用） |
-  | 美国 | Roadgeek 2014 Series EM | FHWA Series E Modified 字形数据复刻（MIT） |
-  | 日本 | Noto Sans JP Bold（子集） | 替代 TRM/小松書体（SIL OFL） |
+
+  | 用途                 | 字体                                         | 说明                                                                           |
+  | -------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+  | 中国 数字/字母/汉字  | **ChinaVehicleLicensePlateFont**（`CN.ttf`） | 训练员提供的号牌专用字体，等宽字距、字宽约 0.5                                 |
+  | 中国新能源 字母/数字 | **CN-E-Latin**（`CN-E-Latin.otf`）           | 训练员提供的新能源专用字形，`1` 带衬线（防涂改 + 易辨识）；缺字形回退 `CN.ttf` |
+  | 欧盟                 | GL-Nummernschild（FE-Schrift 复刻）          | 该字型无官方数字版（Gutenberg Labo，自由使用）                                 |
+  | 美国                 | Roadgeek 2014 Series EM                      | FHWA Series E Modified 字形数据复刻（MIT）                                     |
+  | 日本                 | Noto Sans JP Bold（子集）                    | 替代 TRM/小松書体（SIL OFL）                                                   |
 
   > 中国号牌使用训练员提供的 `CN.ttf`；新能源版式的字母/数字改用 `CN-E-Latin.otf`。
   > 拟合方式按版式区分：
+  >
   > - **单行版式**（440×140 / 480×140）：`uniform` 等比——字形自然比例映射到单元格，`1` 等窄字保持原宽。
   > - **两行版式**（大型汽车后号牌/挂车 440×220、摩托车 220×140、低速车 300×165）：第一行是「扁字」，按单元格 `fill` 拉伸（图6 上行 80×60、图9 上行 50×50、图19 上行 45×45）。
-  > 日本（TRM/小松書体）官方字形未公开授权；欧盟 FE-Schrift 亦从未发布官方数字字体。
+  >   日本（TRM/小松書体）官方字形未公开授权；欧盟 FE-Schrift 亦从未发布官方数字字体。
 
 ## 免责声明
 

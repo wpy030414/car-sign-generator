@@ -20,7 +20,12 @@ export interface CnDotProps {
 }
 
 export function CnDot({ dec, type, values, emboss = false, embossFilterId }: CnDotProps) {
-  const props = (dec.props ?? {}) as { runIndex?: number; after?: number; r?: number; color?: string };
+  const props = (dec.props ?? {}) as {
+    runIndex?: number;
+    after?: number;
+    r?: number;
+    color?: string;
+  };
   const runIndex = props.runIndex ?? 0;
   const after = props.after ?? 1; // 默认在第 2 个字符（字母）之后
   const r = props.r ?? 5;

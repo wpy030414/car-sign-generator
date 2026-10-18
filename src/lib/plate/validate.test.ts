@@ -2,8 +2,13 @@
  * 号牌校验单元测试。
  */
 
-import { describe, expect, it } from 'vitest';
-import { buildPlateString, sanitizeInput, validateField, validatePlate } from '@/lib/plate/validate';
+import { describe, expect, it } from 'vite-plus/test';
+import {
+  buildPlateString,
+  sanitizeInput,
+  validateField,
+  validatePlate,
+} from '@/lib/plate/validate';
 import { getPlateType, STANDARDS, TYPE_REGISTRY } from '@/lib/standards';
 
 const smallCar = getPlateType('cn-small-car');
@@ -45,7 +50,9 @@ describe('sanitizeInput', () => {
 
 describe('buildPlateString', () => {
   it('按字段顺序拼接', () => {
-    expect(buildPlateString(smallCar, { province: '京', letter: 'A', serial: '00001' })).toBe('京A00001');
+    expect(buildPlateString(smallCar, { province: '京', letter: 'A', serial: '00001' })).toBe(
+      '京A00001',
+    );
   });
 });
 
@@ -101,7 +108,9 @@ describe('预设数据', () => {
         const type = TYPE_REGISTRY[t.id];
         const r = validatePlate(type, { ...type.defaults });
         if (!r.ok) {
-          bad.push(`${std.region}/${type.id}: ${buildPlateString(type, type.defaults)} ${JSON.stringify(r.fieldErrors)} ${r.patternError ?? ''}`);
+          bad.push(
+            `${std.region}/${type.id}: ${buildPlateString(type, type.defaults)} ${JSON.stringify(r.fieldErrors)} ${r.patternError ?? ''}`,
+          );
         }
       }
     }

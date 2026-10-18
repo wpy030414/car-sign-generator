@@ -40,9 +40,8 @@ export function ExportBar({ type, svgRef }: ExportBarProps) {
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const sizeKey = (Object.keys(EXPORT_SIZES) as ExportSize[]).find(
-    (k) => EXPORT_SIZES[k] === longEdge,
-  ) ?? '4K';
+  const sizeKey =
+    (Object.keys(EXPORT_SIZES) as ExportSize[]).find((k) => EXPORT_SIZES[k] === longEdge) ?? '4K';
 
   const handleExport = useCallback(async () => {
     setError(null);
@@ -71,10 +70,7 @@ export function ExportBar({ type, svgRef }: ExportBarProps) {
       <div className="flex items-end gap-3">
         <div className="flex-1 space-y-1.5">
           <Label className="text-xs text-muted-foreground">导出分辨率</Label>
-          <Select
-            value={sizeKey}
-            onValueChange={(k) => setLongEdge(EXPORT_SIZES[k as ExportSize])}
-          >
+          <Select value={sizeKey} onValueChange={(k) => setLongEdge(EXPORT_SIZES[k as ExportSize])}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -92,9 +88,7 @@ export function ExportBar({ type, svgRef }: ExportBarProps) {
           {busy ? '导出中…' : '下载 PNG'}
         </Button>
       </div>
-      {error && (
-        <p className="text-xs text-destructive">{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <p className="text-[11px] leading-relaxed text-muted-foreground/70">
         导出为矢量精度 PNG：字体已 base64 内联，尺寸按号牌物理比例（mm）缩放，长边 {longEdge}px。
       </p>

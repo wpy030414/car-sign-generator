@@ -112,9 +112,7 @@ export function Editor() {
                   {err}
                 </p>
               )}
-              {!err && f.help && (
-                <p className="text-xs text-muted-foreground/70">{f.help}</p>
-              )}
+              {!err && f.help && <p className="text-xs text-muted-foreground/70">{f.help}</p>}
             </div>
           );
         })}

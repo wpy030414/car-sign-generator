@@ -49,4 +49,4 @@
 
 ## 完成定义
 
-- 如何判定已完成：`pnpm test` 全绿；四国各版式经 Playwright 截图验证字符位置/比例正确（见 ARCHITECTURE 数据流）；新增版式只需加数据、无需改渲染代码。
+- 如何判定已完成：`vp test run` 全绿；四国各版式经 Playwright 截图验证字符位置/比例正确（见 ARCHITECTURE 数据流）；新增版式只需加数据、无需改渲染代码。

@@ -34,7 +34,12 @@ const DECORATIONS: Record<string, DecorationRenderer> = {
   },
   'cn-ne-panel': (dec: ComponentDecoration) => {
     const p = (dec.props ?? {}) as {
-      x?: number; y?: number; width?: number; height?: number; radius?: number; color?: string;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      radius?: number;
+      color?: string;
     };
     return (
       <CnNeGreenPanel
@@ -102,7 +107,10 @@ export function PlatePreviewById({
   typeId,
   values,
   ...rest
-}: { typeId: string; values: Record<string, string> } & Omit<PlatePreviewProps, 'type' | 'values'>) {
+}: { typeId: string; values: Record<string, string> } & Omit<
+  PlatePreviewProps,
+  'type' | 'values'
+>) {
   const type = getPlateType(typeId);
   return <PlatePreview type={type} values={values} {...rest} />;
 }

@@ -230,11 +230,7 @@ export interface ComponentDecoration {
   props?: Record<string, unknown>;
 }
 
-export type Decoration =
-  | CircleDecoration
-  | RectDecoration
-  | ScrewDecoration
-  | ComponentDecoration;
+export type Decoration = CircleDecoration | RectDecoration | ScrewDecoration | ComponentDecoration;
 
 /** 用户可编辑字段的输入规格。 */
 export interface FieldSpec {

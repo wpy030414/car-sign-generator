@@ -67,16 +67,20 @@ export function EuBand({ dec, type, values, idPrefix }: EuBandProps) {
   const country = (props.code ?? values.country ?? 'D').toUpperCase();
 
   // 12 星环
-  const stars = !showStars ? [] : Array.from({ length: EU_STARS.count }, (_, i) => {
-    const ang = (i * 360) / EU_STARS.count - 90; // 从正上开始
-    const rad = (ang * Math.PI) / 180;
-    const cx = EU_STARS.cx + EU_STARS.radius * Math.cos(rad);
-    const cy = EU_STARS.cy + EU_STARS.radius * Math.sin(rad);
-    return starPath(cx, cy, EU_STARS.starRadius);
-  });
+  const stars = !showStars
+    ? []
+    : Array.from({ length: EU_STARS.count }, (_, i) => {
+        const ang = (i * 360) / EU_STARS.count - 90; // 从正上开始
+        const rad = (ang * Math.PI) / 180;
+        const cx = EU_STARS.cx + EU_STARS.radius * Math.cos(rad);
+        const cy = EU_STARS.cy + EU_STARS.radius * Math.sin(rad);
+        return starPath(cx, cy, EU_STARS.starRadius);
+      });
 
   // 国别代码：用统一 ink 拟合引擎，保证字高精确 = EU_COUNTRY_CODE.height。
   // 每个字符占一个 advance 宽度的单元格，整体居中于蓝带。
+  // 国家代码只含单码点字符，按码点拆分即为逐字符处理
+  // oxlint-disable-next-line typescript/no-misused-spread
   const codeChars = [...country];
   const codeClass: CharClass = {
     id: 'country',

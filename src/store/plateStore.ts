@@ -10,7 +10,13 @@
 
 import { create } from 'zustand';
 import { decodePlateConfig, encodePlateConfig } from '@/lib/plate/shareConfig';
-import { DEFAULT_TYPE, getPlateType, STANDARD_BY_REGION, TYPE_REGISTRY, TYPE_TO_REGION } from '@/lib/standards';
+import {
+  DEFAULT_TYPE,
+  getPlateType,
+  STANDARD_BY_REGION,
+  TYPE_REGISTRY,
+  TYPE_TO_REGION,
+} from '@/lib/standards';
 import type { Region } from '@/types/standard';
 
 export interface PlateState {
@@ -81,7 +87,7 @@ function initialState(): PlateState {
   const typeId = fromUrl.typeId ?? DEFAULT_TYPE[region];
   const type = getPlateType(typeId);
   // URL 值优先，缺省字段用类型默认值补齐
-  const values = { ...type.defaults, ...(fromUrl.values ?? {}) };
+  const values = { ...type.defaults, ...fromUrl.values };
   return {
     region,
     typeId,

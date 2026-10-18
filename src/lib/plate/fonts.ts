@@ -49,7 +49,11 @@ export const FONTS = {
   // 标点专用（连字符/句点/空格）：新号牌字体不含这些字形
   punct: { family: 'ChePaiZiTi-Punct', src: punctUrl, format: 'truetype' } satisfies FontRef,
   fe: { family: 'GL-Nummernschild-Mtl', src: feUrl, format: 'truetype' } satisfies FontRef,
-  roadgeek: { family: 'Roadgeek 2014 Series EM', src: roadgeekUrl, format: 'truetype' } satisfies FontRef,
+  roadgeek: {
+    family: 'Roadgeek 2014 Series EM',
+    src: roadgeekUrl,
+    format: 'truetype',
+  } satisfies FontRef,
   noto: { family: 'Noto Sans JP', weight: 700, src: notoUrl, format: 'woff2' } satisfies FontRef,
   // 日本号牌字形（FZ ナンバープレートゴシック）：数字/字母/部分假名
   fzJP: { family: 'FZ-Carnumber', src: fzUrl, format: 'opentype' } satisfies FontRef,
@@ -128,7 +132,8 @@ async function toDataUrl(font: FontRef): Promise<string> {
   for (let i = 0; i < bytes.length; i += chunk) {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
-  const mime = font.format === 'woff2' ? 'font/woff2' : font.format === 'opentype' ? 'font/otf' : 'font/ttf';
+  const mime =
+    font.format === 'woff2' ? 'font/woff2' : font.format === 'opentype' ? 'font/otf' : 'font/ttf';
   const dataUrl = `data:${mime};base64,${btoa(binary)}`;
   dataUrlCache.set(font.family, dataUrl);
   return dataUrl;

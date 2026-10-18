@@ -42,7 +42,10 @@ function assertNoExternalRefs(root: SVGSVGElement): void {
   // 检查 url(...) 中非 data: 的 http(s)/绝对路径引用
   const urlRefs = xml.match(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g) ?? [];
   for (const ref of urlRefs) {
-    const inner = ref.slice(4, -1).trim().replace(/^['"]|['"]$/g, '');
+    const inner = ref
+      .slice(4, -1)
+      .trim()
+      .replace(/^['"]|['"]$/g, '');
     if (inner.startsWith('#')) continue; // 内部片段引用（渐变等）OK
     if (!inner.startsWith('data:')) {
       throw new Error(`导出中止：SVG 含外部引用 ${inner}（会污染画布）`);
@@ -51,7 +54,8 @@ function assertNoExternalRefs(root: SVGSVGElement): void {
   // 检查 <image href>
   const images = root.querySelectorAll('image');
   images.forEach((img) => {
-    const href = img.getAttribute('href') ?? img.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ?? '';
+    const href =
+      img.getAttribute('href') ?? img.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ?? '';
     if (href && !href.startsWith('data:')) {
       throw new Error(`导出中止：<image> 引用外部资源 ${href}`);
     }

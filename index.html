@@ -2,12 +2,16 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="机动车号牌生成器 —— 支持中国、欧盟、美国、日本号牌，严格参照各国标准文件，可导出 4K 高清 PNG" />
     <title>机动车号牌生成器</title>
+    <meta
+      name="description"
+      content="机动车号牌生成器 —— 支持中国、欧盟、美国、日本号牌，严格参照各国标准文件，可导出 4K 高清 PNG"
+    />
+    <!-- 必须用 %BASE_URL%，否则部署到 /<repo>/ 子路径后图标 404 -->
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
   </head>
-  <body>
+  <body class="min-h-screen bg-background text-foreground antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

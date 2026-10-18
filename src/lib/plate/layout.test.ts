@@ -7,7 +7,7 @@
  * - glyphTransform 把 ink box 精确拟合到 mm 单元格
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { glyphOf, glyphTransform, layoutFreeRun, layoutRun, pitchOf } from '@/lib/plate/layout';
 import { FONTS } from '@/lib/plate/fonts';
 import { cnStandard } from '@/lib/standards/cn';
@@ -21,7 +21,10 @@ const smallCar = getPlateType('cn-small-car');
 describe('pitchOf', () => {
   it('advance 缺省时回退到 width', () => {
     const cls: CharClass = {
-      id: 'x', height: 70, width: 45, fit: 'fill',
+      id: 'x',
+      height: 70,
+      width: 45,
+      fit: 'fill',
       fill: { kind: 'solid', color: '#000' },
       font: { family: 'ChePaiZiTi', src: '' },
     };
@@ -73,7 +76,9 @@ describe('layoutRun（中国小型汽车 京A00001）', () => {
 describe('layoutRun（字段值不足时留空）', () => {
   it('serial 只有 3 位时，后两个槽位为 null', () => {
     const placed = layoutRun(smallCar.runs[0] as never, smallCar, {
-      province: '京', letter: 'A', serial: '000',
+      province: '京',
+      letter: 'A',
+      serial: '000',
     });
     // 槽位序：[省, 字母, s0, s1, s2, s3, s4] → serial '000' 只填前 3 个
     expect(placed[2]!.char).toBe('0'); // s0

@@ -30,7 +30,12 @@ export function resolveFill(fill: Fill, idPrefix: string): FillResult {
  * CSS 角度：0deg = 向上，90deg = 向右，180deg = 向下。
  * SVG：x1,y1 → x2,y2 为渐变方向向量。
  */
-export function gradientVector(angleDeg: number): { x1: string; y1: string; x2: string; y2: string } {
+export function gradientVector(angleDeg: number): {
+  x1: string;
+  y1: string;
+  x2: string;
+  y2: string;
+} {
   // 转为数学角（0 = 向右，逆时针），CSS 0deg 指向"上"即数学 90deg
   const rad = ((90 - angleDeg) * Math.PI) / 180;
   const dx = Math.cos(rad);

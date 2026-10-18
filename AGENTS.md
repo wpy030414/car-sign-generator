@@ -28,7 +28,8 @@
   - **分隔点「·」用矢量 `<circle>` 绘制**，不用字体字形（Latin.ttf 无 U+00B7），不用外链图片（会污染导出画布）。
   - **导出前必须内联字体 base64**（canvas 栅格化 SVG 时无法访问 document.fonts）。见 `export.ts`，改动导出路径时保持 `assertNoExternalRefs` 守卫。
   - 文档结构见 `docs/`；任何架构性改动同步更新 `docs/DECISIONS.md`。
-  - 依赖安装用中国镜像（`.npmrc` 已配 npmmirror）。
+  - 构建 / 检查 / 测试统一走 vp（Vite+）：`vp dev` / `vp build` / `vp preview` / `vp check` / `vp test run`；依赖安装用 `vp install`；网络受限时可在用户级 `~/.npmrc` 配置境内镜像，不提交到仓库。
+  - Pages 部署：`base` 只由 CI 注入的 `PAGES_BASE_PATH` 决定，不要在代码里写死仓库名或域名；`public/` 资源用 `import.meta.env.BASE_URL` 拼接。
   - commit 遵循 Conventional Commits（type/scope 英文，描述中文）。
 
 ## 目录速查
@@ -48,4 +49,6 @@
 - `src/store/plateStore.ts` — Zustand 状态 + URL 持久化
 - `src/components/ui/` — shadcn/ui 组件（生成物，勿手改）
 - `public/fonts/` — 号牌字体（CN.ttf、新能源 CN-E-Latin.otf、FE/Roadgeek/FZ/Noto 等）
+- `src/styles/globals.css` + `tailwind.config.js` / `postcss.config.js` — Tailwind 3.4 主题与 shadcn/ui CSS 变量
+- `.github/workflows/deploy.yml` — GitHub Pages 构建与发布（vp check → vp test → vp build）
 - `docs/` — PRD / ARCHITECTURE / DECISIONS / specs

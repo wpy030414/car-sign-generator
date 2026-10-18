@@ -77,9 +77,7 @@ export interface PlateSvgProps {
 function EmbossFilter({ id }: { id: string }) {
   const margin = `${Math.round(EMBOSS.regionMargin * 100)}%`;
   const { slope, intercept } = diffuseTransfer();
-  const light = (
-    <feDistantLight azimuth={EMBOSS.lightAzimuth} elevation={EMBOSS.lightElevation} />
-  );
+  const light = <feDistantLight azimuth={EMBOSS.lightAzimuth} elevation={EMBOSS.lightElevation} />;
   return (
     <filter
       id={id}
@@ -133,7 +131,12 @@ function EmbossFilter({ id }: { id: string }) {
       />
       <feComposite in="lit" in2="SourceAlpha" operator="in" result="glyph" />
       {/* 投射阴影：凸起字符在背光侧（右下）落到牌面上的影子 */}
-      <feOffset in="SourceAlpha" dx={EMBOSS.castOffsetMm} dy={EMBOSS.castOffsetMm} result="castOff" />
+      <feOffset
+        in="SourceAlpha"
+        dx={EMBOSS.castOffsetMm}
+        dy={EMBOSS.castOffsetMm}
+        result="castOff"
+      />
       <feGaussianBlur in="castOff" stdDeviation={EMBOSS.castBlurMm} result="castBlur" />
       <feFlood floodColor="#000000" floodOpacity={EMBOSS.castOpacity} result="castColor" />
       <feComposite in="castColor" in2="castBlur" operator="in" result="cast" />

@@ -85,16 +85,58 @@ function jpType(opts: JpTypeOpts): PlateType {
   const large = opts.size.h === LARGE.h;
   const s = W / MID.w;
   const P = mid
-    ? { topY: 15, topH: 40, gap: 15, botH: 80, kanaX: 20, kanaY: 90, kanaW: 40,
-        nameRight: 168, classX: 176, classW: 23, classGap: 2,
-        serialW: 40, serialGap: 15, serialRight: 310, hyphenW: 20 }
+    ? {
+        topY: 15,
+        topH: 40,
+        gap: 15,
+        botH: 80,
+        kanaX: 20,
+        kanaY: 90,
+        kanaW: 40,
+        nameRight: 168,
+        classX: 176,
+        classW: 23,
+        classGap: 2,
+        serialW: 40,
+        serialGap: 15,
+        serialRight: 310,
+        hyphenW: 20,
+      }
     : large
-      ? { topY: 22.5, topH: 60, gap: 15, botH: 100, kanaX: 25, kanaY: 117.5, kanaW: 40,
-          nameRight: 210, classX: 220, classW: 30, classGap: 3,
-          serialW: 60, serialGap: 15, serialRight: 415, hyphenW: 30 }
-      : { topY: 15 * s, topH: 40 * s, gap: 15 * s, botH: 80 * s, kanaX: 20 * s, kanaY: 90 * s,
-          kanaW: 40 * s, nameRight: 168 * s, classX: 176 * s, classW: 23 * s, classGap: 2 * s,
-          serialW: 40 * s, serialGap: 15 * s, serialRight: W - 20 * s, hyphenW: 20 * s };
+      ? {
+          topY: 22.5,
+          topH: 60,
+          gap: 15,
+          botH: 100,
+          kanaX: 25,
+          kanaY: 117.5,
+          kanaW: 40,
+          nameRight: 210,
+          classX: 220,
+          classW: 30,
+          classGap: 3,
+          serialW: 60,
+          serialGap: 15,
+          serialRight: 415,
+          hyphenW: 30,
+        }
+      : {
+          topY: 15 * s,
+          topH: 40 * s,
+          gap: 15 * s,
+          botH: 80 * s,
+          kanaX: 20 * s,
+          kanaY: 90 * s,
+          kanaW: 40 * s,
+          nameRight: 168 * s,
+          classX: 176 * s,
+          classW: 23 * s,
+          classGap: 2 * s,
+          serialW: 40 * s,
+          serialGap: 15 * s,
+          serialRight: W - 20 * s,
+          hyphenW: 20 * s,
+        };
   const botY = P.topY + P.topH + P.gap;
 
   // 字符类
@@ -157,17 +199,42 @@ function jpType(opts: JpTypeOpts): PlateType {
   }
 
   const fields: PlateType['fields'] = [
-    { key: 'place', label: '地名', maxLength: 4, charset: '', placeholder: '品川', help: '运输支局名（汉字，如 品川/横浜/名古屋）' },
+    {
+      key: 'place',
+      label: '地名',
+      maxLength: 4,
+      charset: '',
+      placeholder: '品川',
+      help: '运输支局名（汉字，如 品川/横浜/名古屋）',
+    },
   ];
   if (opts.hasClassNum) {
     fields.push({
-      key: 'classNum', label: '分类番号', maxLength: 3, charset: CLASSNUM_CHARSET,
-      placeholder: '500', help: '5=小型乘用 / 3=普通乘用 / 7=軽 等',
+      key: 'classNum',
+      label: '分类番号',
+      maxLength: 3,
+      charset: CLASSNUM_CHARSET,
+      placeholder: '500',
+      help: '5=小型乘用 / 3=普通乘用 / 7=軽 等',
     });
   }
   fields.push(
-    { key: 'kana', label: '平假名（用途文字）', maxLength: 1, charset: KANA_CHARSET, placeholder: 'あ', help: '自家用：さ～ろ；事业用：あ～を' },
-    { key: 'serial', label: '一连指定番号', maxLength: 5, charset: SERIAL_CHARSET, placeholder: '12-34', help: '如 12-34（4 位数字中间加连字符）' },
+    {
+      key: 'kana',
+      label: '平假名（用途文字）',
+      maxLength: 1,
+      charset: KANA_CHARSET,
+      placeholder: 'あ',
+      help: '自家用：さ～ろ；事业用：あ～を',
+    },
+    {
+      key: 'serial',
+      label: '一连指定番号',
+      maxLength: 5,
+      charset: SERIAL_CHARSET,
+      placeholder: '12-34',
+      help: '如 12-34（4 位数字中间加连字符）',
+    },
   );
 
   return {
@@ -189,38 +256,62 @@ function jpType(opts: JpTypeOpts): PlateType {
 
 const types: PlateType[] = [
   jpType({
-    id: 'jp-private-mid', label: '自家用・中板（白底绿字）',
-    bg: JP_COLORS.white, fg: JP_COLORS.green, size: MID, hasClassNum: true,
+    id: 'jp-private-mid',
+    label: '自家用・中板（白底绿字）',
+    bg: JP_COLORS.white,
+    fg: JP_COLORS.green,
+    size: MID,
+    hasClassNum: true,
     defaults: { place: '品川', classNum: '500', kana: 'さ', serial: '12-34' },
     sample: '品川500 さ 12-34',
   }),
   jpType({
-    id: 'jp-commercial-mid', label: '事業用・中板（绿底白字）',
-    bg: JP_COLORS.green, fg: JP_COLORS.white, size: MID, hasClassNum: true,
+    id: 'jp-commercial-mid',
+    label: '事業用・中板（绿底白字）',
+    bg: JP_COLORS.green,
+    fg: JP_COLORS.white,
+    size: MID,
+    hasClassNum: true,
     defaults: { place: '品川', classNum: '500', kana: 'あ', serial: '12-34' },
     sample: '品川500 あ 12-34',
   }),
   jpType({
-    id: 'jp-kei-mid', label: '軽自家用・中板（黄底黑字）',
-    bg: JP_COLORS.yellow, fg: JP_COLORS.black, size: MID, hasClassNum: true,
+    id: 'jp-kei-mid',
+    label: '軽自家用・中板（黄底黑字）',
+    bg: JP_COLORS.yellow,
+    fg: JP_COLORS.black,
+    size: MID,
+    hasClassNum: true,
     defaults: { place: '品川', classNum: '580', kana: 'さ', serial: '12-34' },
     sample: '品川580 さ 12-34',
   }),
   jpType({
-    id: 'jp-kei-commercial-mid', label: '軽事業用・中板（黑底黄字）',
-    bg: JP_COLORS.black, fg: JP_COLORS.yellow, size: MID, hasClassNum: true,
+    id: 'jp-kei-commercial-mid',
+    label: '軽事業用・中板（黑底黄字）',
+    bg: JP_COLORS.black,
+    fg: JP_COLORS.yellow,
+    size: MID,
+    hasClassNum: true,
     defaults: { place: '品川', classNum: '480', kana: 'り', serial: '12-34' },
     sample: '品川480 り 12-34',
   }),
   jpType({
-    id: 'jp-large', label: '大板（440×220・货客/巴士）',
-    bg: JP_COLORS.green, fg: JP_COLORS.white, size: LARGE, hasClassNum: true,
+    id: 'jp-large',
+    label: '大板（440×220・货客/巴士）',
+    bg: JP_COLORS.green,
+    fg: JP_COLORS.white,
+    size: LARGE,
+    hasClassNum: true,
     defaults: { place: '品川', classNum: '100', kana: 'あ', serial: '12-34' },
     sample: '品川100 あ 12-34',
   }),
   jpType({
-    id: 'jp-small', label: '小板（230×125・摩托）',
-    bg: JP_COLORS.white, fg: JP_COLORS.green, size: SMALL, hasClassNum: false,
+    id: 'jp-small',
+    label: '小板（230×125・摩托）',
+    bg: JP_COLORS.white,
+    fg: JP_COLORS.green,
+    size: SMALL,
+    hasClassNum: false,
     defaults: { place: '品川', kana: 'さ', serial: '12-34' },
     sample: '品川 さ 12-34',
   }),

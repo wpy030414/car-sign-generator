@@ -68,11 +68,7 @@ export default function App() {
                       关闭后导出干净图样，便于二次设计
                     </p>
                   </div>
-                  <Switch
-                    id="screws"
-                    checked={showScrews}
-                    onCheckedChange={setShowScrews}
-                  />
+                  <Switch id="screws" checked={showScrews} onCheckedChange={setShowScrews} />
                 </div>
 
                 <div className="flex items-center justify-between border-t pt-4">
@@ -91,7 +87,6 @@ export default function App() {
           </div>
         </div>
       </main>
-
     </div>
   );
 }

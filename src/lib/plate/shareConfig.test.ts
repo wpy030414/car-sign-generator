@@ -2,7 +2,7 @@
  * 链接配置编解码单元测试：roundtrip、URL 安全性、坏输入回退。
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { decodePlateConfig, encodePlateConfig, type PlateConfig } from '@/lib/plate/shareConfig';
 
 const config: PlateConfig = {

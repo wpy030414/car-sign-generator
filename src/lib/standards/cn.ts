@@ -23,7 +23,15 @@
  */
 
 import { FONTS } from '@/lib/plate/fonts';
-import type { CharClass, Fill, FontRef, GlyphFit, PlateType, Run, Standard } from '@/types/standard';
+import type {
+  CharClass,
+  Fill,
+  FontRef,
+  GlyphFit,
+  PlateType,
+  Run,
+  Standard,
+} from '@/types/standard';
 
 // ── 颜色（表1）────────────────────────────────────────────────
 export const CN_COLORS = {
@@ -157,28 +165,85 @@ function carClasses(o: {
   const wideGap = o.wideGap ?? 34;
 
   return {
-    hanzi: mkClass('hanzi', { width: hanW, height, color: o.fg, gapAfter: gap, font: han, stroke: 12 }),
-    hanziWide: mkClass('hanziWide', { width: hanW, height, color: o.fg, gapAfter: wideGap, font: han, stroke: 12 }),
-    letter: mkClass('letter', { width: cellW, height, color: o.fg, gapAfter: gap, font: o.latinFont }),
-    letterWide: mkClass('letterWide', { width: cellW, height, color: o.fg, gapAfter: wideGap, font: o.latinFont }),
-    serial: mkClass('serial', { width: cellW, height, color: o.fg, gapAfter: gap, font: o.latinFont }),
-    suffix: mkClass('suffix', { width: hanW, height, color: o.fg, gapAfter: 0, font: han, stroke: 12 }),
-    suffixRed: mkClass('suffixRed', { width: hanW, height, color: CN_COLORS.red, gapAfter: 0, font: han, stroke: 12 }),
+    hanzi: mkClass('hanzi', {
+      width: hanW,
+      height,
+      color: o.fg,
+      gapAfter: gap,
+      font: han,
+      stroke: 12,
+    }),
+    hanziWide: mkClass('hanziWide', {
+      width: hanW,
+      height,
+      color: o.fg,
+      gapAfter: wideGap,
+      font: han,
+      stroke: 12,
+    }),
+    letter: mkClass('letter', {
+      width: cellW,
+      height,
+      color: o.fg,
+      gapAfter: gap,
+      font: o.latinFont,
+    }),
+    letterWide: mkClass('letterWide', {
+      width: cellW,
+      height,
+      color: o.fg,
+      gapAfter: wideGap,
+      font: o.latinFont,
+    }),
+    serial: mkClass('serial', {
+      width: cellW,
+      height,
+      color: o.fg,
+      gapAfter: gap,
+      font: o.latinFont,
+    }),
+    suffix: mkClass('suffix', {
+      width: hanW,
+      height,
+      color: o.fg,
+      gapAfter: 0,
+      font: han,
+      stroke: 12,
+    }),
+    suffixRed: mkClass('suffixRed', {
+      width: hanW,
+      height,
+      color: CN_COLORS.red,
+      gapAfter: 0,
+      font: han,
+      stroke: 12,
+    }),
   } as Record<string, CharClass>;
 }
 
 // ── 字段规格 ────────────────────────────────────────────────
 const fProv = {
-  key: 'province', label: '发牌机关（省）', maxLength: 1, charset: PROV,
-  placeholder: '京', help: '省、自治区、直辖市简称',
+  key: 'province',
+  label: '发牌机关（省）',
+  maxLength: 1,
+  charset: PROV,
+  placeholder: '京',
+  help: '省、自治区、直辖市简称',
 };
 const fLetter = {
-  key: 'letter', label: '发牌机关代号', maxLength: 1, charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  key: 'letter',
+  label: '发牌机关代号',
+  maxLength: 1,
+  charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
   placeholder: 'A',
 };
 const fSerial = (n: number, help?: string) => ({
-  key: 'serial', label: '序号', maxLength: n, charset: SERIAL_CHARS,
-  placeholder: '0'.repeat(n), help: help ?? `序号 ${n} 位（不含字母 I、O）`,
+  key: 'serial',
+  label: '序号',
+  maxLength: n,
+  charset: SERIAL_CHARS,
+  placeholder: '0'.repeat(n),
+  help: help ?? `序号 ${n} 位（不含字母 I、O）`,
 });
 
 // ── 分隔点装饰 ──────────────────────────────────────────────
@@ -195,8 +260,10 @@ function carScrews(w = CAR.w, h = CAR.h) {
   return {
     kind: 'screws' as const,
     positions: [
-      { x: xL, y: yT }, { x: xR, y: yT },
-      { x: xL, y: yB }, { x: xR, y: yB },
+      { x: xL, y: yT },
+      { x: xR, y: yT },
+      { x: xL, y: yB },
+      { x: xR, y: yB },
     ],
     r: 7.5, // 长圆孔 15×7mm（图1 顶部尺寸链中的 15 为槽宽）
     height: 7,
@@ -209,7 +276,8 @@ function motoScrews() {
   return {
     kind: 'screws' as const,
     positions: [
-      { x: 25, y: 15 }, { x: MOTO.w - 25, y: 15 },
+      { x: 25, y: 15 },
+      { x: MOTO.w - 25, y: 15 },
     ],
     r: 3.5, // 圆孔 φ7（图9：2×φ7）
     height: 7,
@@ -245,7 +313,8 @@ function carRun(opts: {
     });
   }
   return {
-    kind: 'run' as const, primary: true,
+    kind: 'run' as const,
+    primary: true,
     origin: { x: 0, y: (CAR.h - 90) / 2 },
     gap: 12,
     align: 'center' as const,
@@ -261,7 +330,8 @@ function carRearRuns(suffixLiteral?: string): Run[] {
   if (suffixLiteral) bottom.push({ classId: 'bigSuffix', literal: suffixLiteral });
   return [
     {
-      kind: 'run', primary: true,
+      kind: 'run',
+      primary: true,
       origin: { x: 0, y: 15 },
       gap: 25,
       align: 'center',
@@ -271,7 +341,8 @@ function carRearRuns(suffixLiteral?: string): Run[] {
       ],
     },
     {
-      kind: 'run', primary: true,
+      kind: 'run',
+      primary: true,
       origin: { x: 0, y: 90 },
       gap: 15,
       align: 'center',
@@ -330,8 +401,22 @@ function motoRuns(opts: {
     });
   }
   return [
-    { kind: 'run' as const, primary: true, origin: { x: 0, y: 10 }, gap: 30, align: 'center' as const, slots: topSlots },
-    { kind: 'run' as const, primary: true, origin: { x: 0, y: 70 }, gap: 10, align: 'center' as const, slots: bottomSlots },
+    {
+      kind: 'run' as const,
+      primary: true,
+      origin: { x: 0, y: 10 },
+      gap: 30,
+      align: 'center' as const,
+      slots: topSlots,
+    },
+    {
+      kind: 'run' as const,
+      primary: true,
+      origin: { x: 0, y: 70 },
+      gap: 10,
+      align: 'center' as const,
+      slots: bottomSlots,
+    },
   ];
 }
 
@@ -345,7 +430,15 @@ function motoClasses(fg: string) {
     motoSuffix: s('motoSuffix', 50, 50, 0, han),
     // 底行尾字（教练「学」/警用「警」）：单元格 30×60
     motoBottomSuffix: s('motoBottomSuffix', 30, 60, 0, han),
-    motoSuffixRed: mkClass('motoSuffixRed', { width: 50, height: 50, color: CN_COLORS.red, gapAfter: 0, font: han, stroke: 12, cellFill: true }),
+    motoSuffixRed: mkClass('motoSuffixRed', {
+      width: 50,
+      height: 50,
+      color: CN_COLORS.red,
+      gapAfter: 0,
+      font: han,
+      stroke: 12,
+      cellFill: true,
+    }),
     motoSerial: s('motoSerial', 30, 60, 10),
   } as Record<string, CharClass>;
 }
@@ -439,26 +532,45 @@ function neType(opts: {
     body: { fill: opts.fill, radius: NE.r },
     border: cnBorder(NE.border, CN_COLORS.black),
     // 新能源：字母/数字使用专用字形（`1` 带衬线），省简称仍用号牌汉字字体
-    charClasses: carClasses({ fg: CN_COLORS.black, hanW: 45, cellW: 43, gap: 9, wideGap: 49, latinFont: cnELatin }),
-    runs: [{
-      kind: 'run', primary: true,
-      origin: { x: 0, y: (NE.h - 90) / 2 },
+    charClasses: carClasses({
+      fg: CN_COLORS.black,
+      hanW: 45,
+      cellW: 43,
       gap: 9,
-      align: 'center',
-      slots: [
-        { classId: 'hanzi', field: 'province', charIndex: 0 },
-        { classId: 'letterWide', field: 'letter', charIndex: 0 },
-        ...[0, 1, 2, 3, 4, 5].map((i) => ({ classId: 'serial', field: 'serial', charIndex: i })),
-      ],
-    }],
+      wideGap: 49,
+      latinFont: cnELatin,
+    }),
+    runs: [
+      {
+        kind: 'run',
+        primary: true,
+        origin: { x: 0, y: (NE.h - 90) / 2 },
+        gap: 9,
+        align: 'center',
+        slots: [
+          { classId: 'hanzi', field: 'province', charIndex: 0 },
+          { classId: 'letterWide', field: 'letter', charIndex: 0 },
+          ...[0, 1, 2, 3, 4, 5].map((i) => ({ classId: 'serial', field: 'serial', charIndex: i })),
+        ],
+      },
+    ],
     decorations: [
       ...(opts.twoTone
-        ? [{
-            kind: 'component' as const,
-            name: 'cn-ne-panel',
-            // 上下各留 8mm：不顶着黑色边框（边框内缘在 4.5mm），与实测图比例一致
-            props: { x: 137, y: 8, width: NE.w - 137 - 5, height: NE.h - 16, radius: 10, color: CN_COLORS.neGreen },
-          }]
+        ? [
+            {
+              kind: 'component' as const,
+              name: 'cn-ne-panel',
+              // 上下各留 8mm：不顶着黑色边框（边框内缘在 4.5mm），与实测图比例一致
+              props: {
+                x: 137,
+                y: 8,
+                width: NE.w - 137 - 5,
+                height: NE.h - 16,
+                radius: 10,
+                color: CN_COLORS.neGreen,
+              },
+            },
+          ]
         : []),
       carScrews(NE.w, NE.h),
       { kind: 'component' as const, name: 'cn-ne-emblem', props: { cx: 137, cy: 70, r: 14 } },
@@ -470,24 +582,28 @@ function neType(opts: {
   };
 }
 
-types.push(neType({
-  id: 'cn-ne-small',
-  label: '小型新能源汽车号牌',
-  fill: neSmallFill,
-  defaultSerial: 'D12345',
-  help: '6 位：首位为 D/F 等字母（表5/表6）',
-  sample: '京A D12345',
-}));
+types.push(
+  neType({
+    id: 'cn-ne-small',
+    label: '小型新能源汽车号牌',
+    fill: neSmallFill,
+    defaultSerial: 'D12345',
+    help: '6 位：首位为 D/F 等字母（表5/表6）',
+    sample: '京A D12345',
+  }),
+);
 
-types.push(neType({
-  id: 'cn-ne-large',
-  label: '大型新能源汽车号牌',
-  fill: solid(CN_COLORS.yellow),
-  twoTone: true,
-  defaultSerial: '12345D',
-  help: '6 位：末位为 D/A/B/C/E 字母（表5）',
-  sample: '京A 12345D',
-}));
+types.push(
+  neType({
+    id: 'cn-ne-large',
+    label: '大型新能源汽车号牌',
+    fill: solid(CN_COLORS.yellow),
+    twoTone: true,
+    defaultSerial: '12345D',
+    help: '6 位：末位为 D/A/B/C/E 字母（表5）',
+    sample: '京A 12345D',
+  }),
+);
 
 // ── 7. 教练汽车号牌（黄底黑字，末位「学」，4 位序号）──────────
 types.push({
@@ -532,20 +648,29 @@ types.push({
   body: { fill: solid(CN_COLORS.black), radius: CAR.r },
   border: cnBorder(CAR.border, CN_COLORS.white),
   charClasses: carClasses({ fg: CN_COLORS.white }),
-  runs: [{
-    kind: 'run', primary: true,
-    origin: { x: 0, y: (CAR.h - 90) / 2 },
-    gap: 12,
-    align: 'center',
-    slots: [
-      ...[0, 1, 2].map((i) => ({ classId: 'serial', field: 'serial1', charIndex: i })),
-      ...[0, 1, 2].map((i) => ({ classId: 'serial', field: 'serial2', charIndex: i })),
-      { classId: 'suffixRed', literal: '使' },
-    ],
-  }],
+  runs: [
+    {
+      kind: 'run',
+      primary: true,
+      origin: { x: 0, y: (CAR.h - 90) / 2 },
+      gap: 12,
+      align: 'center',
+      slots: [
+        ...[0, 1, 2].map((i) => ({ classId: 'serial', field: 'serial1', charIndex: i })),
+        ...[0, 1, 2].map((i) => ({ classId: 'serial', field: 'serial2', charIndex: i })),
+        { classId: 'suffixRed', literal: '使' },
+      ],
+    },
+  ],
   decorations: [carScrews(), dotDeco(2, CN_COLORS.white)],
   fields: [
-    { key: 'serial1', label: '驻华机构编号', maxLength: 3, charset: '0123456789', placeholder: '224' },
+    {
+      key: 'serial1',
+      label: '驻华机构编号',
+      maxLength: 3,
+      charset: '0123456789',
+      placeholder: '224',
+    },
     { key: 'serial2', label: '序号', maxLength: 3, charset: '0123456789', placeholder: '578' },
   ],
   defaults: { serial1: '224', serial2: '578' },
@@ -562,22 +687,31 @@ types.push({
   body: { fill: solid(CN_COLORS.black), radius: CAR.r },
   border: cnBorder(CAR.border, CN_COLORS.white),
   charClasses: carClasses({ fg: CN_COLORS.white }),
-  runs: [{
-    kind: 'run', primary: true,
-    origin: { x: 0, y: (CAR.h - 90) / 2 },
-    gap: 12,
-    align: 'center',
-    slots: [
-      { classId: 'hanzi', field: 'province', charIndex: 0 },
-      ...[0, 1, 2].map((i) => ({ classId: 'serial', field: 'serial1', charIndex: i })),
-      ...[0, 1].map((i) => ({ classId: 'serial', field: 'serial2', charIndex: i })),
-      { classId: 'suffixRed', literal: '领' },
-    ],
-  }],
+  runs: [
+    {
+      kind: 'run',
+      primary: true,
+      origin: { x: 0, y: (CAR.h - 90) / 2 },
+      gap: 12,
+      align: 'center',
+      slots: [
+        { classId: 'hanzi', field: 'province', charIndex: 0 },
+        ...[0, 1, 2].map((i) => ({ classId: 'serial', field: 'serial1', charIndex: i })),
+        ...[0, 1].map((i) => ({ classId: 'serial', field: 'serial2', charIndex: i })),
+        { classId: 'suffixRed', literal: '领' },
+      ],
+    },
+  ],
   decorations: [carScrews(), dotDeco(3, CN_COLORS.white)],
   fields: [
     fProv,
-    { key: 'serial1', label: '驻华外交机构编号', maxLength: 3, charset: '0123456789', placeholder: '224' },
+    {
+      key: 'serial1',
+      label: '驻华外交机构编号',
+      maxLength: 3,
+      charset: '0123456789',
+      placeholder: '224',
+    },
     { key: 'serial2', label: '序号', maxLength: 2, charset: '0123456789', placeholder: '78' },
   ],
   defaults: { province: '沪', serial1: '224', serial2: '78' },
@@ -667,7 +801,12 @@ types.push({
   body: { fill: solid(CN_COLORS.white), radius: MOTO.r },
   border: cnBorder(MOTO.border, CN_COLORS.black),
   charClasses: motoClasses(CN_COLORS.black),
-  runs: motoRuns({ serials: 4, topRight: 'letter', bottomSuffixLiteral: '警', bottomSuffixRed: true }),
+  runs: motoRuns({
+    serials: 4,
+    topRight: 'letter',
+    bottomSuffixLiteral: '警',
+    bottomSuffixRed: true,
+  }),
   decorations: [motoScrews(), dotDeco(0, CN_COLORS.black, 0)],
   fields: [fProv, fLetter, fSerial(4)],
   defaults: { province: '京', letter: 'A', serial: '0006' },
@@ -685,15 +824,29 @@ types.push({
   border: cnBorder(MOTO.border, CN_COLORS.white),
   charClasses: {
     ...motoClasses(CN_COLORS.white),
-    motoSerialWide: mkClass('motoSerialWide', { width: 35, height: 48, color: CN_COLORS.white, gapAfter: 12.5, cellFill: true }),
+    motoSerialWide: mkClass('motoSerialWide', {
+      width: 35,
+      height: 48,
+      color: CN_COLORS.white,
+      gapAfter: 12.5,
+      cellFill: true,
+    }),
   },
   runs: [
     {
-      kind: 'run', primary: true, origin: { x: 0, y: 11.5 }, gap: 12.5, align: 'center',
+      kind: 'run',
+      primary: true,
+      origin: { x: 0, y: 11.5 },
+      gap: 12.5,
+      align: 'center',
       slots: [0, 1, 2].map((i) => ({ classId: 'motoSerialWide', field: 'serial1', charIndex: i })),
     },
     {
-      kind: 'run', primary: true, origin: { x: 0, y: 79.5 }, gap: 12.5, align: 'center',
+      kind: 'run',
+      primary: true,
+      origin: { x: 0, y: 79.5 },
+      gap: 12.5,
+      align: 'center',
       slots: [
         ...[0, 1, 2].map((i) => ({ classId: 'motoSerialWide', field: 'serial2', charIndex: i })),
         { classId: 'motoSuffixRed', literal: '使' },
@@ -702,7 +855,13 @@ types.push({
   ],
   decorations: [motoScrews()],
   fields: [
-    { key: 'serial1', label: '驻华机构编号', maxLength: 3, charset: '0123456789', placeholder: '224' },
+    {
+      key: 'serial1',
+      label: '驻华机构编号',
+      maxLength: 3,
+      charset: '0123456789',
+      placeholder: '224',
+    },
     { key: 'serial2', label: '序号', maxLength: 3, charset: '0123456789', placeholder: '578' },
   ],
   defaults: { serial1: '224', serial2: '578' },
@@ -736,25 +895,63 @@ types.push({
   body: { fill: solid(CN_COLORS.yellow), radius: 10 },
   border: cnBorder(2, CN_COLORS.black),
   charClasses: {
-    lowHanzi: mkClass('lowHanzi', { width: 45, height: 45, color: CN_COLORS.black, gapAfter: 34, font: han, stroke: 10, cellFill: true }),
-    lowLetter: mkClass('lowLetter', { width: 45, height: 45, color: CN_COLORS.black, gapAfter: 0, cellFill: true }),
-    lowSerial: mkClass('lowSerial', { width: 45, height: 90, color: CN_COLORS.black, gapAfter: 12, cellFill: true }),
+    lowHanzi: mkClass('lowHanzi', {
+      width: 45,
+      height: 45,
+      color: CN_COLORS.black,
+      gapAfter: 34,
+      font: han,
+      stroke: 10,
+      cellFill: true,
+    }),
+    lowLetter: mkClass('lowLetter', {
+      width: 45,
+      height: 45,
+      color: CN_COLORS.black,
+      gapAfter: 0,
+      cellFill: true,
+    }),
+    lowSerial: mkClass('lowSerial', {
+      width: 45,
+      height: 90,
+      color: CN_COLORS.black,
+      gapAfter: 12,
+      cellFill: true,
+    }),
   },
   runs: [
     {
-      kind: 'run', primary: true, origin: { x: 0, y: 10 }, gap: 34, align: 'center',
+      kind: 'run',
+      primary: true,
+      origin: { x: 0, y: 10 },
+      gap: 34,
+      align: 'center',
       slots: [
         { classId: 'lowHanzi', field: 'province', charIndex: 0 },
         { classId: 'lowLetter', field: 'letter', charIndex: 0 },
       ],
     },
     {
-      kind: 'run', primary: true, origin: { x: 0, y: 65 }, gap: 12, align: 'center',
+      kind: 'run',
+      primary: true,
+      origin: { x: 0, y: 65 },
+      gap: 12,
+      align: 'center',
       slots: [0, 1, 2, 3, 4].map((i) => ({ classId: 'lowSerial', field: 'serial', charIndex: i })),
     },
   ],
   decorations: [
-    { kind: 'screws', positions: [{ x: 15, y: 12.5 }, { x: 285, y: 12.5 }], r: 7.5, height: 7, fill: '#FFFFFF', stroke: '#999999' },
+    {
+      kind: 'screws',
+      positions: [
+        { x: 15, y: 12.5 },
+        { x: 285, y: 12.5 },
+      ],
+      r: 7.5,
+      height: 7,
+      fill: '#FFFFFF',
+      stroke: '#999999',
+    },
     dotDeco(0, CN_COLORS.black, 0),
   ],
   fields: [fProv, fLetter, fSerial(5)],
@@ -773,21 +970,44 @@ types.push({
   border: cnBorder(TEMP.border, CN_COLORS.black),
   charClasses: {
     // 220mm 内排 7 个字：30 + 6×27 + 6×3.5 = 213mm，左右各留 3.5mm
-    hanzi: mkClass('hanzi', { width: 30, height: 60, color: CN_COLORS.black, gapAfter: 3.5, font: han, stroke: 12, cellFill: true }),
-    letter: mkClass('letter', { width: 27, height: 60, color: CN_COLORS.black, gapAfter: 3.5, cellFill: true }),
-    digit: mkClass('digit', { width: 27, height: 60, color: CN_COLORS.black, gapAfter: 3.5, cellFill: true }),
+    hanzi: mkClass('hanzi', {
+      width: 30,
+      height: 60,
+      color: CN_COLORS.black,
+      gapAfter: 3.5,
+      font: han,
+      stroke: 12,
+      cellFill: true,
+    }),
+    letter: mkClass('letter', {
+      width: 27,
+      height: 60,
+      color: CN_COLORS.black,
+      gapAfter: 3.5,
+      cellFill: true,
+    }),
+    digit: mkClass('digit', {
+      width: 27,
+      height: 60,
+      color: CN_COLORS.black,
+      gapAfter: 3.5,
+      cellFill: true,
+    }),
   },
-  runs: [{
-    kind: 'run', primary: true,
-    origin: { x: 0, y: (TEMP.h - 60) / 2 },
-    gap: 3.5,
-    align: 'center',
-    slots: [
-      { classId: 'hanzi', field: 'province', charIndex: 0 },
-      { classId: 'letter', field: 'letter', charIndex: 0 },
-      ...[0, 1, 2, 3, 4].map((i) => ({ classId: 'digit', field: 'serial', charIndex: i })),
-    ],
-  }],
+  runs: [
+    {
+      kind: 'run',
+      primary: true,
+      origin: { x: 0, y: (TEMP.h - 60) / 2 },
+      gap: 3.5,
+      align: 'center',
+      slots: [
+        { classId: 'hanzi', field: 'province', charIndex: 0 },
+        { classId: 'letter', field: 'letter', charIndex: 0 },
+        ...[0, 1, 2, 3, 4].map((i) => ({ classId: 'digit', field: 'serial', charIndex: i })),
+      ],
+    },
+  ],
   decorations: [],
   fields: [fProv, fLetter, { ...fSerial(5), charset: '0123456789' }],
   defaults: { province: '京', letter: 'A', serial: '00001' },

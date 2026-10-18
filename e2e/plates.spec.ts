@@ -54,10 +54,7 @@ test.describe('首屏与默认状态', () => {
     await page.goto('/');
     const link = page.getByRole('link', { name: '在 GitHub 上查看本项目' });
     await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute(
-      'href',
-      'https://github.com/wpy030414/car-sign-generator',
-    );
+    await expect(link).toHaveAttribute('href', 'https://github.com/wpy030414/car-sign-generator');
     await expect(link).toHaveAttribute('target', '_blank');
   });
 
@@ -212,16 +209,16 @@ test.describe('URL 持久化', () => {
     await page.goto('/?region=CN&type=cn-small-car');
     await page.getByLabel('序号').fill('12345');
     await page.locator('[role=switch]').first().click();
-    await expect
-      .poll(() => new URL(page.url()).searchParams.get('config'))
-      .toBeTruthy();
+    await expect.poll(() => new URL(page.url()).searchParams.get('config')).toBeTruthy();
 
     // 解析 config：base64url → UTF-8 JSON
     const config = await page.evaluate(() => {
       const raw = new URL(location.href).searchParams.get('config')!;
       const b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
       const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
-      return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))));
+      return JSON.parse(
+        new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))),
+      );
     });
     expect(config).toMatchObject({
       region: 'CN',
@@ -243,7 +240,9 @@ test.describe('URL 持久化', () => {
   test('带 query 的链接还原对应号牌', async ({ page }) => {
     const url =
       '/?region=JP&type=jp-commercial-mid&values=' +
-      encodeURIComponent(JSON.stringify({ place: '横浜', classNum: '300', kana: 'あ', serial: '55-77' }));
+      encodeURIComponent(
+        JSON.stringify({ place: '横浜', classNum: '300', kana: 'あ', serial: '55-77' }),
+      );
     await page.goto(url);
     const info = await plateInfo(page);
     expect(info?.id).toBe('jp-commercial-mid');
@@ -279,9 +278,11 @@ test.describe('新能源号牌背景', () => {
     await page.goto('/?region=CN&type=cn-ne-small');
     await page.getByLabel('序号').fill('D10234');
 
-    const glyphs = await page.locator('svg[data-plate-svg] text').evaluateAll((els) =>
-      els.map((el) => ({ ch: el.textContent, ff: el.getAttribute('font-family') ?? '' })),
-    );
+    const glyphs = await page
+      .locator('svg[data-plate-svg] text')
+      .evaluateAll((els) =>
+        els.map((el) => ({ ch: el.textContent, ff: el.getAttribute('font-family') ?? '' })),
+      );
     expect(glyphs.map((g) => g.ch).join('')).toBe('京AD10234');
     // 省简称：仍是号牌汉字字体
     expect(glyphs[0].ff).toContain("'ChinaVehicleLicensePlateFont'");
@@ -300,7 +301,10 @@ test.describe('新能源号牌背景', () => {
 
     // 普通号牌保持原字体
     await page.goto('/?region=CN&type=cn-small-car');
-    const normal = await page.locator('svg[data-plate-svg] text').first().getAttribute('font-family');
+    const normal = await page
+      .locator('svg[data-plate-svg] text')
+      .first()
+      .getAttribute('font-family');
     expect(normal).toContain("'ChinaVehicleLicensePlateFont'");
     expect(normal).not.toContain('CN-E-Latin');
   });
@@ -383,12 +387,15 @@ test.describe('导出设置', () => {
     expect(await svg.locator('g[filter*="emboss"] circle').count()).toBe(1);
 
     // 滤镜管线：高度场 → 高光/漫反射 → 投射阴影
-    const pipeline = await svg.locator('filter').first().evaluate((f) => ({
-      sRGB: f.getAttribute('color-interpolation-filters'),
-      prims: [...f.children].map((c) => c.tagName),
-      azimuth: f.querySelector('feDistantLight')?.getAttribute('azimuth'),
-      elevation: f.querySelector('feDistantLight')?.getAttribute('elevation'),
-    }));
+    const pipeline = await svg
+      .locator('filter')
+      .first()
+      .evaluate((f) => ({
+        sRGB: f.getAttribute('color-interpolation-filters'),
+        prims: [...f.children].map((c) => c.tagName),
+        azimuth: f.querySelector('feDistantLight')?.getAttribute('azimuth'),
+        elevation: f.querySelector('feDistantLight')?.getAttribute('elevation'),
+      }));
     expect(pipeline.sRGB).toBe('sRGB');
     for (const prim of [
       'feGaussianBlur',
@@ -506,12 +513,14 @@ test.describe('GA 36-2018 版式实测回归', () => {
   /** 取每个字符的 transform 平移 y，用于判断是否分两行。 */
   async function rows(page: import('@playwright/test').Page) {
     return page.evaluate(() =>
-      [...document.querySelectorAll('svg[data-plate-svg] text, svg[data-plate-svg] [data-y]')].map((t) => {
-        const y = t.getAttribute('data-y');
-        if (y !== null) return Number(y);
-        const m = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(t.getAttribute('transform') ?? '');
-        return m ? Number(m[2]) : NaN;
-      }),
+      [...document.querySelectorAll('svg[data-plate-svg] text, svg[data-plate-svg] [data-y]')].map(
+        (t) => {
+          const y = t.getAttribute('data-y');
+          if (y !== null) return Number(y);
+          const m = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(t.getAttribute('transform') ?? '');
+          return m ? Number(m[2]) : NaN;
+        },
+      ),
     );
   }
 

@@ -34,7 +34,7 @@ import type {
 
 /** FontRef.family → FONT_METRICS 键的映射。 */
 const METRICS_BY_FAMILY: Record<string, keyof typeof FONT_METRICS> = {
-  'ChinaVehicleLicensePlateFont': 'CNPlate',
+  ChinaVehicleLicensePlateFont: 'CNPlate',
   'CN-E-Latin': 'CNELatin',
   'ChePaiZiTi-Punct': 'Latin',
   'GL-Nummernschild-Mtl': 'FE',
@@ -219,9 +219,7 @@ export function layoutAny(
   type: PlateType,
   values: Record<string, string>,
 ): (PlacedGlyph | null)[] {
-  return run.kind === 'run'
-    ? layoutRun(run, type, values)
-    : layoutFreeRun(run, type, values);
+  return run.kind === 'run' ? layoutRun(run, type, values) : layoutFreeRun(run, type, values);
 }
 
 /**

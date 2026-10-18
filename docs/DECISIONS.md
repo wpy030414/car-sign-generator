@@ -42,6 +42,7 @@
 - **后果**：需要构建期字体度量管线（fontTools）；度量文件是生成物。新增字体需在 `METRICS_BY_FAMILY` 注册。
 
 > 补充（2026-10）：替代字体被横向压缩后竖画会变细（如思源黑体压到 45/90 时竖画约减半）。`CharClass.hBold` 以「同一字形多次水平偏移绘制」只加粗竖画、保持横画不变，把笔画对比还原到标准值；矮字形（连字符等）另以 cap 高为纵向基准缩放。
+
 - **何时重新审视**：若标准给出的是「字体 em 尺寸」而非「ink 尺寸」，或字体本身已按标准设计（则 uniform 足够），可简化。
 
 ## ADR-003：数据驱动的标准模型，各国差异尽量表达为数据
@@ -141,13 +142,13 @@
   1. GitHub Pages 项目站点（`/<repo>/` 子路径）。
   2. GitHub Pages 用户/组织站点（根路径，需独立仓库）。
   3. Vercel/Netlify 等外部托管。
-- **决策**：选方案 1。`.github/workflows/deploy-pages.yml` 在 `main` 推送或手动触发时执行 `pnpm build`，经 `upload-pages-artifact` + `deploy-pages` 发布。
+- **决策**：选方案 1。`.github/workflows/deploy.yml` 在 `main` 推送或手动触发时执行 `vp check`、`vp test run`、`vp build`，经 `upload-pages-artifact` + `deploy-pages` 发布。
 - **为什么选这个**：零成本、与仓库同源、无需额外账号；项目无后端与路由，静态托管即可。
 - **为什么不选其他**：方案 2 需额外仓库并与源码分离；方案 3 引入外部平台依赖。
 - **后果**：
-  - 站点位于 `/car-sign-generator/`，Vite `base` 由工作流注入 `BASE_PATH` 控制；`public/` 字体与 favicon 路径均通过 `import.meta.env.BASE_URL` 或 Vite 的 index.html 重写适配子路径。
+  - 站点位于 `/car-sign-generator/`，Vite `base` 由工作流注入 `PAGES_BASE_PATH` 控制（未设置时默认 `/<repo>/`，自定义域或用户页设为 `/`）；`public/` 字体与 favicon 路径均通过 `import.meta.env.BASE_URL` 或 Vite 的 index.html 重写适配子路径。
   - 本地开发与 Playwright 保持 `base = '/'`，避免测试路径变化。
-  - 仓库名一旦更改，必须同步修改 `BASE_PATH` 与 README 中的线上地址。
+  - 仓库名一旦更改无需改代码：CI 自动取仓库名拼 `/<repo>/`；只有线上地址需同步 README。
   - 首次启用需在仓库 Settings → Pages 将 Source 设为 GitHub Actions。
 - **何时重新审视**：若引入客户端路由（需要 404 fallback）或改用自定义域名，则调整部署方案。
 
@@ -167,7 +168,6 @@
   - 装饰文字只需不标记，美国州名/口号、欧盟国别代码自动排除。
 - **后果**：新增号牌数据时必须给主体序列标记 `primary`；未标记时回退到全部序列，旧数据仍可用。`validate.test.ts` 增加「所有类型的默认值均通过整串校验」的回归测试。
 - **何时重新审视**：若出现「视觉顺序与注册号阅读顺序不一致」的版式，可让主串顺序独立于布局顺序（届时引入显式 `patternOrder`）。
-
 
 ## ADR-010：预览缩放与全屏用本地 UI 状态，全屏采用应用内覆盖层
 
@@ -228,3 +228,25 @@
   - `fontsOfType` / `ensureFontsLoaded` / `buildExportFontCss` 统一展开回退链：屏幕加载与导出内联都包含回退字体，缺字形不会落到系统字体。
 - **后果**：当前缺字形（`0`、`J/K/P–Z` 等）会回退到 `CN.ttf`，笔画与专用字形略有差异；补齐字库后无需改任何代码。新增字体仍需在 `METRICS_BY_FAMILY` 注册并生成 build 期度量。
 - **何时重新审视**：若拿到覆盖全部号牌字符集的官方新能源字体，可移除 `fallback`；若回退字符在视觉上不可接受，再考虑用 `unicode-range` 分子集或补字。
+
+## ADR-010：采用 node-app-starter 的 node-page 路线
+
+- **日期**：2026-10
+- **状态**：已采纳
+- **背景**：项目是纯前端 SPA（无服务端、无数据库、无鉴权），需要零成本公开部署。原先的裸 Vite + oxlint + vitest 工具链各自为政，CI 只跑构建，格式与类型没有统一闸门。
+- **决策**：严格按 `node-page` 路线组织项目：
+  - 单包（非 workspace），构建 / 检查 / 测试统一由 **vp（Vite+）** 驱动：`vp dev` / `vp build` / `vp preview` / `vp check` / `vp test`。
+  - 不在 `package.json` 声明 `packageManager`，由 vp 依据 `pnpm-lock.yaml` 自动检测并代理 pnpm；Node 版本只维护 `.nvmrc`（24）。
+  - Pages 部署走官方 `upload-pages-artifact` + `deploy-pages`，`base` 由 CI 注入的 `PAGES_BASE_PATH` 决定；`public/.nojekyll` 随产物发布。
+  - 静态数据直接 `import` 进 bundle；`public/` 下的字体用 `import.meta.env.BASE_URL` 拼接，不写死根路径。
+- **为什么选这个**：无服务端需求时，monorepo 与自托管只是纯开销；Pages + Actions 与仓库同源、零成本，静态资源可长期缓存。
+- **偏离默认模板之处（均属路线允许的替换/配置项）**：
+  - `fmt.semi = true`：沿用仓库既有代码风格（分号 + 单引号），避免整库无意义重排；路线文档明确允许修改 `fmt` 块。
+  - `vite` 以别名指向 `@voidzero-dev/vite-plus-core@1.3.0`：让 `@vitejs/plugin-react` 与 vp 解析到同一份 Vite 类型，消除插件类型不兼容；构建入口仍是 `vp build`。
+  - 单测从 `vite-plus/test` 导入：vp 内置 vitest，无需单独声明 `vitest` 依赖。
+  - 标准数据保留在 `src/lib/standards/` 而非 `src/data/`：它是领域模型的一部分（类型、注册表、布局语义），不是无类型静态常量。
+- **后果**：
+  - CI 部署前必须先通过 `vp check`（格式 + lint + 类型）与 `vp test run`，静态错误在发布前拦住。
+  - 新增依赖用 `vp add` / `vp install`；不要引入独立的 vite/vitest/oxlint 配置。
+  - 若未来需要服务端能力，`src/` 可平移到 monorepo 的 `apps/web/`，`base` 改回 `/`。
+- **何时重新审视**：需要 SSR/SEO、后端 API、数据库或鉴权时改走 `node-monorepo` 或静态生成器方案。

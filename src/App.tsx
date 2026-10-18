@@ -23,6 +23,7 @@ export default function App() {
   const emboss = usePlateStore((s) => s.emboss);
   const setEmboss = usePlateStore((s) => s.setEmboss);
   const type = getPlateType(typeId);
+  const embossSupported = type.surface !== 'printed';
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [fontsReady, setFontsReady] = useState(false);
 
@@ -79,10 +80,17 @@ export default function App() {
                       模拟冲压
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      高度场 + 左上定向光，模拟冲压成型的浮雕感
+                      {embossSupported
+                        ? '高度场 + 左上定向光，模拟冲压成型的浮雕感'
+                        : '纸质号牌为印刷面，不支持模拟冲压'}
                     </p>
                   </div>
-                  <Switch id="emboss" checked={emboss} onCheckedChange={setEmboss} />
+                  <Switch
+                    id="emboss"
+                    checked={emboss && embossSupported}
+                    disabled={!embossSupported}
+                    onCheckedChange={setEmboss}
+                  />
                 </div>
               </CardContent>
             </Card>

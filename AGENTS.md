@@ -44,7 +44,7 @@
 - `src/lib/plate/fill.ts` — 纯色/渐变 Fill → SVG paint
 - `src/lib/plate/validate.ts` — 字段级 + 整串级校验
 - `src/components/plates/PlateSvg.tsx` — 通用 SVG 渲染引擎（纯函数）
-- `src/components/plates/{EuBand,CnDot}.tsx` — 特殊几何装饰组件
+- `src/components/plates/{EuBand,CnDot,CnTempBackdrop}.tsx` — 特殊几何装饰组件（欧盟蓝带 / 中国分隔点 / 临时号牌纸质底纹与区域签注）
 - `src/components/{Editor,PlateStage,PlatePreview,ExportBar}.tsx` — 应用 UI
 - `src/store/plateStore.ts` — Zustand 状态 + URL 持久化
 - `src/components/ui/` — shadcn/ui 组件（生成物，勿手改）

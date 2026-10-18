@@ -215,6 +215,8 @@ export function PlateSvg({
 }: PlateSvgProps) {
   const uid = useId().replace(/:/g, '');
   const { width: W, height: H } = type.size;
+  // 纸质/印刷牌面没有冲压工序：即使 store/URL 里 emboss=true 也不渲染浮雕。
+  const embossEnabled = emboss && type.surface !== 'printed';
 
   // 号牌底色（可能是渐变）
   const bodyFill = useFillPaint(type.body.fill, 'body');
@@ -236,7 +238,7 @@ export function PlateSvg({
       <defs>
         {bodyFill.def}
         {/* 冲压：高度场 + 定向光照（user unit = mm） */}
-        {emboss && <EmbossFilter id={`${uid}-emboss`} />}
+        {embossEnabled && <EmbossFilter id={`${uid}-emboss`} />}
       </defs>
 
       {/* 板体 */}
@@ -248,7 +250,7 @@ export function PlateSvg({
         整块冲压成型的号牌（GA 36）边框也参与浮雕。
       */}
       {type.border.width > 0 && (
-        <g filter={emboss && type.border.emboss ? `url(#${uid}-emboss)` : undefined}>
+        <g filter={embossEnabled && type.border.emboss ? `url(#${uid}-emboss)` : undefined}>
           <rect
             data-plate-border
             x={inset + type.border.width / 2}
@@ -279,7 +281,7 @@ export function PlateSvg({
                 type,
                 values,
                 idPrefix: `${idPrefix}-${i}`,
-                emboss,
+                emboss: embossEnabled,
                 embossFilterId: `${uid}-emboss`,
               })}
             </g>
@@ -294,7 +296,7 @@ export function PlateSvg({
         - 滤镜区域按整层包围盒计算，细小字形（连字符、分隔点）也不会被区域裁掉；
         - 只跑一次滤镜，4K 导出的耗时与字符数量无关。
       */}
-      <g filter={emboss ? `url(#${uid}-emboss)` : undefined}>
+      <g filter={embossEnabled ? `url(#${uid}-emboss)` : undefined}>
         {type.runs.map((run, ri) => (
           <g key={ri}>
             {layoutAny(run, type, values).map((g, gi) => {

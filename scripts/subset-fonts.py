@@ -46,8 +46,16 @@ FONT_DIR = os.path.join(ROOT, "public", "fonts")
 COVERAGE_OUT = os.path.join(ROOT, "src", "lib", "plate", "fontCoverage.generated.ts")
 
 # 中国号牌：数字 + 大写字母 + 31 个省份简称 + 固定尾缀（使领馆学警港澳挂）
+# 临时行驶车号牌的签注文字（限定在/区域内行驶/有效期至/年月日）与尾字（试/超）
+# 也在同一字体里，一并保留。区域名称字段使用系统宋体，不纳入号牌字体子集。
 CN_PROV = "京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿"
-CN_CHARS = string.digits + string.ascii_uppercase + CN_PROV + "港澳挂学警使领"
+CN_CHARS = (
+    string.digits
+    + string.ascii_uppercase
+    + CN_PROV
+    + "港澳挂学警使领"
+    + "限定在区域内行驶有效期至年月日试超"
+)
 
 # 中国新能源拉丁字形：源字体实际只有 1–9 与 A–H/L/M/N；按全字母数字请求，
 # 缺字自动忽略，方便日后替换为覆盖更全的字体。

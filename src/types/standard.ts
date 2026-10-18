@@ -253,6 +253,12 @@ export interface PlateType {
   /** 标准出处，如「GA 36-2018 表1 / 表2 / 表3 / 表4」 */
   citation: string;
   size: { width: Mm; height: Mm };
+  /**
+   * 牌面工艺：
+   * - `pressed`（缺省）：金属冲压板，可开启「模拟冲压」浮雕；
+   * - `printed`：纸质/印刷面（如临时行驶车号牌），冲压开关不生效。
+   */
+  surface?: 'pressed' | 'printed';
   body: { fill: Fill; radius: Mm };
   /** 边框（内缩描边）；width=0 表示无边框 */
   border: {

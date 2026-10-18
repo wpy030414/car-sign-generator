@@ -10,6 +10,7 @@ import { useLayoutEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { CnDot } from './plates/CnDot';
 import { CnNeEmblem, CnNeGreenPanel } from './plates/CnNeEmblem';
+import { CnTempBackdrop, CnTempRegion } from './plates/CnTempBackdrop';
 import { EuBand } from './plates/EuBand';
 import { PlateSvg, type DecorationRenderer } from './plates/PlateSvg';
 import { usePlateFontLoading, type FontLoadingState } from '@/lib/plate/useFontLoading';
@@ -32,6 +33,47 @@ const DECORATIONS: Record<string, DecorationRenderer> = {
   'cn-ne-emblem': (dec: ComponentDecoration) => {
     const p = (dec.props ?? {}) as { cx?: number; cy?: number; r?: number };
     return <CnNeEmblem cx={p.cx ?? 137} cy={p.cy ?? 70} r={p.r ?? 14} />;
+  },
+  'cn-temp-backdrop': (dec: ComponentDecoration) => {
+    const p = (dec.props ?? {}) as {
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      radius?: number;
+      color?: string;
+      base?: string;
+    };
+    return (
+      <CnTempBackdrop
+        x={p.x ?? 2.4}
+        y={p.y ?? 2.4}
+        width={p.width ?? 215.2}
+        height={p.height ?? 135.2}
+        radius={p.radius ?? 2.2}
+        color={p.color ?? '#7AD9DA'}
+        base={p.base ?? '#FFFFFF'}
+      />
+    );
+  },
+  'cn-temp-region': (dec: ComponentDecoration, ctx) => {
+    const p = (dec.props ?? {}) as {
+      x?: number;
+      y?: number;
+      width?: number;
+      fontSize?: number;
+      field?: string;
+    };
+    const field = p.field ?? 'region';
+    return (
+      <CnTempRegion
+        x={p.x ?? 103}
+        y={p.y ?? 84}
+        width={p.width ?? 101}
+        fontSize={p.fontSize ?? 11.5}
+        text={ctx.values[field] ?? ''}
+      />
+    );
   },
   'cn-ne-panel': (dec: ComponentDecoration) => {
     const p = (dec.props ?? {}) as {

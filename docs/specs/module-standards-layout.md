@@ -8,7 +8,7 @@
 
 - **数据模型**（`src/types/standard.ts`）：
   - 所有物理量以 mm（`Mm = number`）表达，SVG viewBox 直接以 mm 为 user unit。
-  - `PlateType` 描述一种完整可渲染版式：尺寸、板体填充（纯色/渐变）、边框、字符类集合、布局序列、装饰、可编辑字段、默认值、校验正则、citation。
+  - `PlateType` 描述一种完整可渲染版式：尺寸、`surface`（`pressed` 冲压 / `printed` 印刷）、板体填充（纯色/渐变）、边框、字符类集合、布局序列、装饰、可编辑字段、默认值、校验正则、citation。
   - `CharClass` 描述一类字符的物理规格：ink 高/宽、advance、`gapAfter`、拟合模式（`uniform`/`fill`）、颜色、字体。
   - `Run` 有两种：`CharacterRun`（静态槽位，绑定字段第 N 字符或固定字面量）与 `FreeRun`（自由文本，逐字符按数字/字母/其他自动分类）。
 - **布局引擎**（`src/lib/plate/layout.ts`）：
@@ -30,6 +30,8 @@
 - 布局引擎必须是纯函数（无副作用、无 DOM/canvas 访问），可在 Node 下单测。
 - 新增字体必须在 `METRICS_BY_FAMILY` 注册，否则 `metricsFor` 抛错。
 - 分隔点「·」不用字体字形（号牌字体无 U+00B7），由 `CnDot` 组件矢量绘制。
+- `surface='printed'` 的号牌不渲染冲压滤镜；「模拟冲压」开关在 UI 中禁用。
+- 自由签注文字（临时号牌的区域名称）允许使用系统宋体自然排版，不纳入 mm 单元格拟合与字体子集校验。
 
 ## 边界条件
 
@@ -40,7 +42,7 @@
 
 ## 验收标准
 
-- [x] 中国 20 类、欧盟 5 类、美国 5 类、日本 6 类版式数据齐全，每类带 citation/fields/defaults。
+- [x] 中国 23 类（表1 的 20 类 + 临时行驶车号牌四类正面）、欧盟 5 类、美国 5 类、日本 6 类版式数据齐全，每类带 citation/fields/defaults。
 - [x] `layoutRun` 步进 = advance + gapAfter；居中时左右留白对称（容差 0.5mm）。
 - [x] `layoutFreeRun` 右对齐时序列右缘贴合对齐框右缘；shrinkToFit 时超框内容压缩到框宽。
 - [x] `glyphTransform` fill 模式使 ink 高精确等于单元格高（数字 0：sy × inkH_ratio = 90mm）。

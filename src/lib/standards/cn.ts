@@ -43,7 +43,8 @@ export const CN_COLORS = {
   black: '#111111',
   white: '#FFFFFF',
   red: '#E60012', // 警/使/领/应急 用红字
-  tempBlue: '#BCD9F0', // 临时行驶车「天（酞）蓝底纹」近似
+  tempBlue: '#7AD9DA', // 临时行驶车「天（酞）蓝 PB09」底纹印花近似
+  tempBrown: '#C4916F', // 临时行驶车「棕黄 YR06」底纹印花近似
   neOrange: '#E99F34', // 大型新能源 左幅橙
   neGreen: '#25E148', // 新能源绿
 } as const;
@@ -76,7 +77,7 @@ const CAR = { w: 440, h: 140, r: 10, border: 2 };
 const CAR_REAR = { w: 440, h: 220, r: 10, border: 2 };
 const NE = { w: 480, h: 140, r: 10, border: 2 };
 const MOTO = { w: 220, h: 140, r: 8, border: 2 };
-const TEMP = { w: 220, h: 140, r: 8, border: 2 };
+const TEMP = { w: 220, h: 140, r: 4, border: 1.5 };
 
 /**
  * 中国号牌边框。
@@ -109,6 +110,10 @@ interface ClassOpts {
   hBold?: number;
   /** 拟合方式：默认等比；两行版式的「扁」字行用 cellFill */
   fit?: GlyphFit;
+  /** uniform 模式的横向附加倍数（缺省 1） */
+  xScale?: number;
+  /** 单元格步进；缺省 = width */
+  advance?: number;
   /**
    * 按单元格宽度撑满（两行版式的「扁」字）：
    * 以数字 0 为参考撑满单元格宽，其余字形按同一系数缩放（`1` 仍保持窄）。
@@ -122,10 +127,10 @@ function mkClass(id: string, o: ClassOpts): CharClass {
     id,
     height: o.height,
     width: o.width,
-    advance: o.width,
+    advance: o.advance ?? o.width,
     fit: o.fit ?? 'uniform',
     // 号牌字体数字 0 的 ink 宽高比约 0.494；cellFill 时据此把 0 撑满单元格
-    xScale: o.cellFill ? o.width / (0.494 * o.height) : undefined,
+    xScale: o.cellFill ? o.width / (0.494 * o.height) : o.xScale,
     stroke: o.stroke,
     outline: o.outline,
     hBold: o.hBold,
@@ -967,60 +972,242 @@ types.push({
   sample: '京·M / 00000',
 });
 
-// ── 18. 临时行驶车号牌（220×140，纸质，天蓝底纹）──────────────
-types.push({
-  id: 'cn-temp',
-  label: '临时行驶车号牌',
-  citation: 'GA 36-2018 表1 / 附录 B.19（220×140，纸质，天（酞）蓝底纹黑字）',
-  size: { width: TEMP.w, height: TEMP.h },
-  body: { fill: solid(CN_COLORS.tempBlue), radius: TEMP.r },
-  border: cnBorder(TEMP.border, CN_COLORS.black),
-  charClasses: {
-    // 220mm 内排 7 个字：30 + 6×27 + 6×3.5 = 213mm，左右各留 3.5mm
-    hanzi: mkClass('hanzi', {
-      width: 30,
-      height: 60,
+// ── 18. 临时行驶车号牌（220×140，纸质，正面）──────────────────
+// GA 36-2018 5.4.6–5.4.8 / 图17–22 / 附录 B.18–B.21。
+// 牌面不是金属冲压板，而是纸质防伪底纹上直接印刷的牌照号码与签注栏。
+// 四类的底色与尾字（6.6.2）：
+//   行政辖区内  天（酞）蓝 PB09 底纹，无尾字
+//   跨行政辖区  棕黄 YR06 底纹，无尾字
+//   试验用      棕黄 YR06 底纹，尾字「试」（序号 4 位）
+//   特型        棕黄 YR06 底纹，尾字「超」（序号 4 位）
+// 版面据 220×140 效果图（附录 B.18–B.21）实测，单位 mm：
+//   号码 ink 高 50；京/字母步进 27.75，序号步进 30.1，前缀与序号间 5.4；
+//   号码左起 7、上缘 16。
+//   「限定在」位于 x=22.6、y=75；「区域内行驶」位于 x=155.0、y=75，字高 9。
+//   「有效期至」竖排于 x=10.4、y=86.7 起，字距 9.5。
+//   「年 / 月 / 日」字高 22.2，字心 x=69.85 / 135.55 / 201.0，y=101.9。
+//   底纹与车马暗记由 `cn-temp-backdrop` 组件绘制（官方专色防伪图案为近似重建）。
+
+// 区域名称是自由填写字段：不限制字符集，渲染时使用系统宋体（见 cn-temp-region 装饰）。
+const fTempRegion = {
+  key: 'region',
+  label: '限定行驶区域',
+  maxLength: 10,
+  placeholder: '北京市',
+  help: '自由填写，如「北京市」「北京至天津」',
+};
+
+/** 临时号牌上的固定文字：逐字 literal 排成一条 run。 */
+function tempText(text: string, classId: string, origin: { x: number; y: number }): Run {
+  return {
+    kind: 'run',
+    origin,
+    gap: 0,
+    slots: Array.from(text).map((literal) => ({ classId, literal })),
+  };
+}
+
+/** 竖排固定文字：每字一条 run，按字高步进。 */
+function tempTextVertical(
+  text: string,
+  classId: string,
+  origin: { x: number; y: number },
+  step: number,
+): Run[] {
+  return Array.from(text).map((literal, i) => ({
+    kind: 'run' as const,
+    origin: { x: origin.x, y: origin.y + i * step },
+    gap: 0,
+    slots: [{ classId, literal }],
+  }));
+}
+
+/** 单个日期字；date 类 advance=0，origin.x 即字形水平中心。 */
+function tempDateChar(literal: string, cx: number): Run {
+  return {
+    kind: 'run',
+    origin: { x: cx, y: 101.9 },
+    gap: 0,
+    slots: [{ classId: 'date', literal }],
+  };
+}
+
+function tempClasses(): Record<string, CharClass> {
+  // 号码：ink 高 50。字体自然宽高比约 0.516，效果图实测约 0.472，
+  // 故用 uniform 等比缩放 + xScale 0.945 横向收窄（`1` 仍保持窄）。
+  const number = (id: string, advance: number, gapAfter: number, font: FontRef = latin) =>
+    mkClass(id, {
+      width: advance,
+      height: 50,
       color: CN_COLORS.black,
-      gapAfter: 3.5,
+      gapAfter,
+      font,
+      xScale: 0.945,
+    });
+
+  return {
+    hanzi: number('hanzi', 27.75, 0, han),
+    letter: number('letter', 27.75, 5.4),
+    serial: number('serial', 30.1, 0),
+    suffix: number('suffix', 30.1, 0, han),
+    // 签注文字：字高 9、字距 8.8；实测字面比字体自然比例宽，xScale 1.72
+    label: mkClass('label', {
+      width: 8.8,
+      height: 9,
+      color: CN_COLORS.black,
+      gapAfter: 0,
       font: han,
-      stroke: 12,
-      cellFill: true,
+      xScale: 1.72,
     }),
-    letter: mkClass('letter', {
-      width: 27,
-      height: 60,
+    // 「有效期至」竖排：字高略小、字面更宽（效果图约 9.6×8.6，近方形）
+    labelVertical: mkClass('labelVertical', {
+      width: 8.8,
+      height: 8.6,
       color: CN_COLORS.black,
-      gapAfter: 3.5,
-      cellFill: true,
+      gapAfter: 0,
+      font: han,
+      xScale: 2.4,
     }),
-    digit: mkClass('digit', {
-      width: 27,
-      height: 60,
-      color: CN_COLORS.black,
-      gapAfter: 3.5,
-      cellFill: true,
-    }),
-  },
-  runs: [
-    {
-      kind: 'run',
-      primary: true,
-      origin: { x: 0, y: (TEMP.h - 60) / 2 },
-      gap: 3.5,
-      align: 'center',
-      slots: [
-        { classId: 'hanzi', field: 'province', charIndex: 0 },
-        { classId: 'letter', field: 'letter', charIndex: 0 },
-        ...[0, 1, 2, 3, 4].map((i) => ({ classId: 'digit', field: 'serial', charIndex: i })),
-      ],
+    // 年/月/日：字高 22.2；advance=0 让 origin.x 成为字形中心
+    date: {
+      ...mkClass('date', {
+        width: 22.2,
+        height: 22.2,
+        color: CN_COLORS.black,
+        gapAfter: 0,
+        font: han,
+        xScale: 1.7,
+      }),
+      advance: 0,
     },
-  ],
-  decorations: [],
-  fields: [fProv, fLetter, { ...fSerial(5), charset: '0123456789' }],
-  defaults: { province: '京', letter: 'A', serial: '00001' },
-  pattern: /^[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新咕鹿][A-Z][0-9]{5}$/,
-  sample: '京A00001',
-});
+  };
+}
+
+function tempNumberRun(suffix?: '试' | '超'): Run {
+  const digits = suffix ? 4 : 5;
+  return {
+    kind: 'run',
+    primary: true,
+    origin: { x: 7, y: 16 },
+    gap: 0,
+    slots: [
+      { classId: 'hanzi', field: 'province', charIndex: 0 },
+      { classId: 'letter', field: 'letter', charIndex: 0 },
+      ...Array.from({ length: digits }, (_, i) => ({
+        classId: 'serial',
+        field: 'serial',
+        charIndex: i,
+      })),
+      ...(suffix ? [{ classId: 'suffix', literal: suffix }] : []),
+    ],
+  };
+}
+
+function tempRuns(suffix?: '试' | '超'): Run[] {
+  return [
+    tempNumberRun(suffix),
+    tempText('限定在', 'label', { x: 22.6, y: 75 }),
+    tempText('区域内行驶', 'label', { x: 155.0, y: 75 }),
+    ...tempTextVertical('有效期至', 'labelVertical', { x: 10.4, y: 86.7 }, 9.5),
+    tempDateChar('年', 69.85),
+    tempDateChar('月', 135.55),
+    tempDateChar('日', 201.0),
+  ];
+}
+
+function tempPlate(opts: {
+  id: string;
+  label: string;
+  citation: string;
+  color: string;
+  region: string;
+  suffix?: '试' | '超';
+}): PlateType {
+  const digits = opts.suffix ? 4 : 5;
+  return {
+    id: opts.id,
+    label: opts.label,
+    citation: opts.citation,
+    size: { width: TEMP.w, height: TEMP.h },
+    // 纸质印刷面：不允许「模拟冲压」
+    surface: 'printed',
+    body: { fill: solid(CN_COLORS.white), radius: TEMP.r },
+    // 印刷黑框（非冲压）：牌边 → 0.6mm 白边 → 1.5mm 黑框
+    border: { width: TEMP.border, fill: solid(CN_COLORS.black), inset: 0.6 },
+    charClasses: tempClasses(),
+    runs: tempRuns(opts.suffix),
+    decorations: [
+      {
+        kind: 'component',
+        name: 'cn-temp-backdrop',
+        props: {
+          x: 2.4,
+          y: 2.4,
+          width: TEMP.w - 4.8,
+          height: TEMP.h - 4.8,
+          radius: 2.2,
+          color: opts.color,
+          base: CN_COLORS.white,
+        },
+      },
+      // 「限定在 ___ 区域内行驶」的自由填写区域：系统宋体，居中在两条固定文字之间
+      {
+        kind: 'component',
+        name: 'cn-temp-region',
+        props: { x: 103, y: 84, width: 101, fontSize: 11.5, field: 'region' },
+      },
+    ],
+    fields: [
+      fProv,
+      fLetter,
+      { ...fSerial(digits, `序号 ${digits} 位数字`), charset: '0123456789' },
+      fTempRegion,
+    ],
+    defaults: {
+      province: '京',
+      letter: 'A',
+      serial: digits === 5 ? '00001' : '0000',
+      region: opts.region,
+    },
+    pattern: new RegExp(
+      opts.suffix ? `^[${PROV}][A-Z][0-9]{4}${opts.suffix}$` : `^[${PROV}][A-Z][0-9]{5}$`,
+    ),
+    sample: opts.suffix ? `京A0000${opts.suffix}` : '京A00001',
+  };
+}
+
+types.push(
+  tempPlate({
+    id: 'cn-temp',
+    label: '临时行驶车号牌（行政辖区内）',
+    citation: 'GA 36-2018 5.4.6 / 图17 / 附录 B.18（220×140，纸质，PB09 天蓝底纹黑字）',
+    color: CN_COLORS.tempBlue,
+    region: '北京市',
+  }),
+  tempPlate({
+    id: 'cn-temp-cross',
+    label: '临时行驶车号牌（跨行政辖区）',
+    citation: 'GA 36-2018 5.4.6 / 6.6.2 d) / 附录 B.19（220×140，纸质，YR06 棕黄底纹黑字）',
+    color: CN_COLORS.tempBrown,
+    region: '北京至天津',
+  }),
+  tempPlate({
+    id: 'cn-temp-test',
+    label: '临时行驶车号牌（试验用）',
+    citation: 'GA 36-2018 5.4.7 / 6.6.2 d) / 附录 B.20（220×140，纸质，棕黄底纹，尾字「试」）',
+    color: CN_COLORS.tempBrown,
+    region: '全国',
+    suffix: '试',
+  }),
+  tempPlate({
+    id: 'cn-temp-special',
+    label: '临时行驶车号牌（特型）',
+    citation: 'GA 36-2018 5.4.8 / 6.6.2 d) / 附录 B.21（220×140，纸质，棕黄底纹，尾字「超」）',
+    color: CN_COLORS.tempBrown,
+    region: '全国',
+    suffix: '超',
+  }),
+);
 
 export const cnStandard: Standard = {
   region: 'CN',

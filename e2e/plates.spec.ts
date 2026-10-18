@@ -165,6 +165,10 @@ test.describe('预设合法性', () => {
     ['/?region=CN&type=cn-embassy', '使馆汽车（固定尾字「使」）'],
     ['/?region=CN&type=cn-consulate', '领馆汽车（固定尾字「领」）'],
     ['/?region=CN&type=cn-consulate-moto', '领馆摩托车（两行 + 用途字）'],
+    ['/?region=CN&type=cn-temp', '临时号牌（行政辖区内）'],
+    ['/?region=CN&type=cn-temp-cross', '临时号牌（跨行政辖区）'],
+    ['/?region=CN&type=cn-temp-test', '临时号牌（试验用，尾字「试」）'],
+    ['/?region=CN&type=cn-temp-special', '临时号牌（特型，尾字「超」）'],
     ['/?region=US&type=us-al', '阿拉巴马州（州名/口号不参与注册号）'],
     ['/?region=US&type=us-co', '科罗拉多州'],
     ['/?region=US&type=us-dc', '华盛顿特区（长口号）'],
@@ -333,6 +337,87 @@ test.describe('新能源号牌背景', () => {
     });
     expect(size.w).toBeCloseTo(28, 1);
     expect(size.h).toBeCloseTo(28, 1);
+  });
+});
+
+test.describe('GA 36-2018 临时行驶车号牌', () => {
+  const cases: [string, string, string, string, string][] = [
+    ['cn-temp', '京A00001', '#7AD9DA', '行政辖区内', '北京市'],
+    ['cn-temp-cross', '京A00001', '#C4916F', '跨行政辖区', '北京至天津'],
+    ['cn-temp-test', '京A0000试', '#C4916F', '试验用', '全国'],
+    ['cn-temp-special', '京A0000超', '#C4916F', '特型', '全国'],
+  ];
+
+  for (const [id, number, color, name, region] of cases) {
+    test(`${name}：纸质底纹 + 号码 + 签注栏`, async ({ page }) => {
+      await page.goto(`/?region=CN&type=${id}`);
+      const info = await plateInfo(page);
+      expect(info?.viewBox).toBe('0 0 220 140');
+      // 号码之后是固定签注文字（限定在 / 区域内行驶 / 有效期至 / 年 月 日）
+      expect(info?.chars).toContain(number);
+      expect(info?.chars).toContain('限定在');
+      expect(info?.chars).toContain('区域内行驶有效期至年月日');
+      // 区域字段可编辑，默认值来自该版式；区域文字用系统宋体、独立于号码字体
+      await expect(page.getByLabel('限定行驶区域')).toHaveValue(region);
+      const regionText = page.locator('svg[data-plate-svg] [data-temp-region]');
+      await expect(regionText).toHaveText(region);
+      await expect(regionText).toHaveAttribute('font-family', /Songti SC|SimSun|Noto Serif CJK/);
+      // 纸质印刷面：模拟冲压开关禁用
+      await expect(page.locator('#emboss')).toBeDisabled();
+      // 底纹使用对应专色（PB09 天蓝 / YR06 棕黄）
+      await expect(page.locator('svg[data-plate-svg] [data-temp-backdrop]')).toHaveAttribute(
+        'data-temp-backdrop',
+        color,
+      );
+      // 满版防伪网格 + 车马暗记
+      expect(await page.locator('svg[data-plate-svg] pattern').count()).toBe(1);
+      expect(await page.locator('svg[data-plate-svg] [data-temp-watermark]').count()).toBe(1);
+      // 纸质号牌没有金属安装孔
+      expect(await page.locator('svg[data-plate-svg] rect[stroke="#999999"]').count()).toBe(0);
+    });
+  }
+
+  test('限定行驶区域可填写，跨辖区可用「至」连接', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-temp');
+    const input = page.getByLabel('限定行驶区域');
+    const regionText = page.locator('svg[data-plate-svg] [data-temp-region]');
+    await input.fill('河北省');
+    await expect(regionText).toHaveText('河北省');
+    await input.fill('北京至天津');
+    await expect(regionText).toHaveText('北京至天津');
+    // 非受限字符集：任意常见汉字都可填写（由系统宋体承载）
+    await input.fill('北京市朝阳区');
+    await expect(regionText).toHaveText('北京市朝阳区');
+  });
+
+  test('纸质临牌忽略已开启的模拟冲压', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-small-car');
+    await page.locator('#emboss').click();
+    await expect(page.locator('svg[data-plate-svg] filter')).toHaveCount(1);
+    await page.locator('[role=combobox]').first().click();
+    await page.getByRole('option', { name: '临时行驶车号牌（行政辖区内）' }).click();
+    await expect(page.locator('#emboss')).toBeDisabled();
+    await expect(page.locator('svg[data-plate-svg] filter')).toHaveCount(0);
+  });
+
+  test('试验用序号为 4 位数字，尾字「试」随字段更新', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-temp-test');
+    await expect(page.getByText('合法号牌')).toBeVisible();
+    await page.getByLabel('序号').fill('1234');
+    expect((await plateInfo(page))?.chars).toContain('京A1234试');
+  });
+
+  test('临时号牌导出 4K PNG 比例正确（220×140）', async ({ page }) => {
+    await page.goto('/?region=CN&type=cn-temp');
+    await page.evaluate(() => document.fonts.ready);
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: /下载 PNG/ }).click(),
+    ]);
+    const buf = readFileSync((await download.path())!);
+    const { w, h } = pngSize(buf);
+    expect(w).toBe(3840);
+    expect(h).toBe(2444); // round(3840 * 140/220)
   });
 });
 

@@ -174,8 +174,47 @@ describe('字体回退链', () => {
 });
 
 describe('标准注册表完整性', () => {
-  it('中国 20 类版式齐全（表1 全部类别，含前后号牌与摩托系列）', () => {
-    expect(cnStandard.types.length).toBe(20);
+  it('中国 23 类版式齐全（表1 全部类别 + 临时号牌四类正面）', () => {
+    // 表1 的 20 类中，「临时行驶车号牌」按 5.4.6–5.4.8 拆成四个正面版式：
+    // 行政辖区内 / 跨行政辖区 / 试验用 / 特型。
+    expect(cnStandard.types.length).toBe(23);
+  });
+
+  it('临时行驶车号牌四类均为纸质正面版式（220×140，底纹 + 签注栏）', () => {
+    const ids = ['cn-temp', 'cn-temp-cross', 'cn-temp-test', 'cn-temp-special'];
+    for (const id of ids) {
+      const t = getPlateType(id);
+      expect(t.size).toEqual({ width: 220, height: 140 });
+      expect(t.border.emboss).toBeFalsy();
+      // 纸质印刷面：不允许模拟冲压
+      expect(t.surface).toBe('printed');
+      // 「限定在 ___ 区域内行驶」的区域可填写
+      expect(t.fields.some((f) => f.key === 'region')).toBe(true);
+      expect(
+        t.decorations.some((d) => d.kind === 'component' && d.name === 'cn-temp-backdrop'),
+      ).toBe(true);
+      // 签注文字与号码同用中国号牌字体
+      expect(t.charClasses.label.font.family).toBe('CN-Plate');
+    }
+    expect(getPlateType('cn-temp-cross').charClasses).toBeDefined();
+    // 试验用 / 特型序号为 4 位，第 5 个字符是固定尾字
+    expect(getPlateType('cn-temp-test').defaults.serial).toBe('0000');
+    expect(getPlateType('cn-temp-special').defaults.serial).toBe('0000');
+    expect(getPlateType('cn-temp').defaults.serial).toBe('00001');
+  });
+
+  it('临时号牌号码按效果图实测步进摆放（前缀 27.75 / 序号 30.1 / 间隔 5.4）', () => {
+    const t = getPlateType('cn-temp');
+    const placed = layoutRun(t.runs[0] as never, t, t.defaults).filter(
+      (g): g is NonNullable<typeof g> => g !== null,
+    );
+    expect(placed).toHaveLength(7);
+    const centers = placed.map((g) => g.cell.x + g.cell.w / 2);
+    // 京 / A / 0 / 0 / 0 / 0 / 1
+    expect(centers[0]).toBeCloseTo(20.875, 3);
+    expect(centers[1]).toBeCloseTo(48.625, 3);
+    expect(centers[2]).toBeCloseTo(82.95, 3);
+    expect(centers[6]).toBeCloseTo(203.35, 3);
   });
 
   it('普通摩托车为一字两行版式（图9）', () => {

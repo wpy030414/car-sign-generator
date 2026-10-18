@@ -9,7 +9,7 @@
 │  UI 层 (React)                                                │
 │  App ──┬── Editor        国家/类型/字段输入 + 校验            │
 │        ├── PlateStage ── PlatePreview ── PlateSvg  (渲染)     │
-│        │                              └─ EuBand / CnDot (装饰)│
+│        │                    └─ EuBand / CnDot / CnTempBackdrop │
 │        └── ExportBar     分辨率选择 + 下载                    │
 ├─────────────────────────────────────────────────────────────┤
 │  状态层  plateStore (Zustand + URL query 持久化)              │
@@ -27,21 +27,22 @@
 
 ## 核心模块
 
-| 模块                             | 职责                                                                                                                                                                                              |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `types/standard.ts`              | 数据模型：`Standard`（国家）→ `PlateType`（版式）→ `CharClass`（字符类）/`Run`（序列）/`Decoration`（装饰）/`FieldSpec`（字段）。一切的地基。                                                     |
-| `lib/standards/{cn,eu,us,jp}.ts` | 四国标准数据。每个 `PlateType` 含尺寸、边框、字符类（mm ink 尺寸 + 拟合模式）、布局序列、装饰、字段、校验正则、citation。                                                                         |
-| `lib/standards/index.ts`         | 注册表：`STANDARD_BY_REGION`、`TYPE_REGISTRY`、`TYPE_TO_REGION`、`getPlateType`、`fontsOfType`。                                                                                                  |
-| `lib/plate/layout.ts`            | 布局引擎（纯函数）：`layoutRun`/`layoutFreeRun` 算字符单元格坐标；`glyphTransform` 算 ink→mm 单元格的 SVG transform；支持 `gapAfter`（按字符类型间距）、`shrinkToFit`（超框自动压缩）、三种对齐。 |
-| `lib/plate/fontMetrics.ts`       | 构建期由 fontTools 测量的字形 ink 度量（em 单位）。**生成物，勿手改。**                                                                                                                           |
-| `lib/plate/fonts.ts`             | 字体：屏幕 `@font-face` 注入 + `document.fonts` 加载；导出用 fetch→base64 data URI 缓存。                                                                                                         |
-| `lib/plate/export.ts`            | 4K 导出：克隆 SVG → 内联 base64 字体 → 序列化 → `Image` → `Canvas` → PNG `toBlob` → 下载。含 `assertNoExternalRefs` 防画布污染。                                                                  |
-| `lib/plate/fill.ts`              | `Fill`（纯色/线性渐变）→ SVG paint + `<linearGradient>` defs；CSS 角度→SVG 渐变向量。                                                                                                             |
-| `lib/plate/validate.ts`          | 字段级（charset/长度）+ 整串级（pattern，只针对 `primary` 布局序列组成的注册号主串）校验，`sanitizeInput` 输入即时过滤。                                                                          |
-| `components/plates/PlateSvg.tsx` | 通用 SVG 渲染引擎（纯组件，props = PlateType + values）：板体、边框、装饰、字符序列。同一份 DOM 供预览与导出复用。                                                                                |
-| `components/plates/EuBand.tsx`   | 欧盟蓝带装饰：Reflex Blue 竖带 + 12 星环（Flag of Europe 几何）+ 国别代码（ink 拟合）。                                                                                                           |
-| `components/plates/CnDot.tsx`    | 中国分隔点装饰：复用 `layoutRun` 按真实布局把 `<circle>` 放在字母/省份与序号之间。                                                                                                                |
-| `store/plateStore.ts`            | Zustand：region/typeId/values/导出设置；URL 持久化为单个 `?config=<base64url(JSON)>`（debounce replaceState）。                                                                                   |
+| 模块                                   | 职责                                                                                                                                                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types/standard.ts`                    | 数据模型：`Standard`（国家）→ `PlateType`（版式）→ `CharClass`（字符类）/`Run`（序列）/`Decoration`（装饰）/`FieldSpec`（字段）。一切的地基。                                                     |
+| `lib/standards/{cn,eu,us,jp}.ts`       | 四国标准数据。每个 `PlateType` 含尺寸、边框、字符类（mm ink 尺寸 + 拟合模式）、布局序列、装饰、字段、校验正则、citation。                                                                         |
+| `lib/standards/index.ts`               | 注册表：`STANDARD_BY_REGION`、`TYPE_REGISTRY`、`TYPE_TO_REGION`、`getPlateType`、`fontsOfType`。                                                                                                  |
+| `lib/plate/layout.ts`                  | 布局引擎（纯函数）：`layoutRun`/`layoutFreeRun` 算字符单元格坐标；`glyphTransform` 算 ink→mm 单元格的 SVG transform；支持 `gapAfter`（按字符类型间距）、`shrinkToFit`（超框自动压缩）、三种对齐。 |
+| `lib/plate/fontMetrics.ts`             | 构建期由 fontTools 测量的字形 ink 度量（em 单位）。**生成物，勿手改。**                                                                                                                           |
+| `lib/plate/fonts.ts`                   | 字体：屏幕 `@font-face` 注入 + `document.fonts` 加载；导出用 fetch→base64 data URI 缓存。                                                                                                         |
+| `lib/plate/export.ts`                  | 4K 导出：克隆 SVG → 内联 base64 字体 → 序列化 → `Image` → `Canvas` → PNG `toBlob` → 下载。含 `assertNoExternalRefs` 防画布污染。                                                                  |
+| `lib/plate/fill.ts`                    | `Fill`（纯色/线性渐变）→ SVG paint + `<linearGradient>` defs；CSS 角度→SVG 渐变向量。                                                                                                             |
+| `lib/plate/validate.ts`                | 字段级（charset/长度）+ 整串级（pattern，只针对 `primary` 布局序列组成的注册号主串）校验，`sanitizeInput` 输入即时过滤。                                                                          |
+| `components/plates/PlateSvg.tsx`       | 通用 SVG 渲染引擎（纯组件，props = PlateType + values）：板体、边框、装饰、字符序列。同一份 DOM 供预览与导出复用。                                                                                |
+| `components/plates/EuBand.tsx`         | 欧盟蓝带装饰：Reflex Blue 竖带 + 12 星环（Flag of Europe 几何）+ 国别代码（ink 拟合）。                                                                                                           |
+| `components/plates/CnDot.tsx`          | 中国分隔点装饰：复用 `layoutRun` 按真实布局把 `<circle>` 放在字母/省份与序号之间。                                                                                                                |
+| `components/plates/CnTempBackdrop.tsx` | 临时行驶车号牌纸质底纹：SVG `<pattern>` 防伪网格 + 古代车马线描暗记，按天蓝/棕黄专色渲染（官方防伪图案的矢量近似）。                                                                              |
+| `store/plateStore.ts`                  | Zustand：region/typeId/values/导出设置；URL 持久化为单个 `?config=<base64url(JSON)>`（debounce replaceState）。                                                                                   |
 
 ## 模块关系
 
@@ -69,5 +70,7 @@
 - **字符 ink 拟合**：标准给的是字符**物理 ink 尺寸**（如中国汽车字符 45×90mm、摩托车序号 30×60mm），字体自然比例与之不符，故用 `glyphTransform` 各向异性（fill）或等比（uniform）缩放 ink box 到精确 mm；连字符、中黒等矮字形改以字体 cap 高为纵向基准，避免被拉成实心块。这是「严格参照标准」的关键，不能退化为 `letter-spacing` 或自然排版。
 - **分隔点矢量绘制**：号牌字体无 U+00B7，旧实现用外链 PNG（污染导出画布）。新实现用 `<circle>`。
 - **导出字体必须内联**：canvas 栅格化 SVG（经 `Image`）运行在隔离文档，无法访问页面 `document.fonts`；外链字体会失败或跨域污染画布导致 `toBlob` 抛错。故 base64 内联 + `assertNoExternalRefs` 守卫。
-- **字体子集化**：CJK 字体原文件 7-10MB（中国号牌字体 1.9MB / 8k+ 字），子集化到号牌字符集（中国 74 字、日本 189 字）并转 woff2 后，五个字体合计约 38KB，可 base64 内联进导出 SVG。覆盖清单由 `fontCoverage.test.ts` 校验。
+- **字体子集化**：CJK 字体原文件 7-10MB（中国号牌字体 1.9MB / 8k+ 字），子集化到号牌字符集（中国 93 字、日本 189 字）并转 woff2 后，五个字体合计约 40KB，可 base64 内联进导出 SVG。覆盖清单由 `fontCoverage.test.ts` 校验。
 - **布局引擎纯函数**：不依赖 DOM/canvas 测量，构建期度量 + 运行时纯计算 → 确定性、可单测（见 `layout.test.ts`）。
+- **纸质号牌不是金属冲压板**：临时行驶车号牌为白纸基 + 专色防伪底纹 + 印刷黑框，四类仅底色/尾字不同；`PlateType.surface='printed'` 时「模拟冲压」开关禁用且渲染层忽略 `emboss`。底纹由 `cn-temp-backdrop` 组件绘制，全部内联矢量，导出不依赖外部图片。
+- **自由签注文字的字体例外**：临时号牌的「限定在 ___ 区域内行驶」区域名称用系统宋体（Songti SC / SimSun / Noto Serif CJK）自然排版，不进入 `CharClass` 的 mm 单元格拟合，也不内联字体。它是用户自由填写字段，不属于号牌注册号；其余所有号牌字符仍严格使用内联字体。
